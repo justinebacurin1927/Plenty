@@ -11,12 +11,16 @@
 
 ## ✨ Features
 
-- **⏰ Repeating reminders** — Notifications every 15m / 30m / 45m / 1h / 2h
-- **💧 Quick log** — Tap "I drank water" to log 250ml with haptic feedback
-- **📊 Today's progress** — See your glass count at a glance
-- **📋 Drink history** — Full day log with timestamps
-- **🌙 Quiet hours** — Suppress notifications during sleep
-- **🔧 Dev Logs** — In-app console viewer for debugging
+- **⏰ Smart reminders** — Repeating notifications with quiet hours, escalation (2h warning, 4h alert), and weather-aware interval adjustment on hot days
+- **💧 Quick log** — Tap to log 250ml with haptic feedback, long-press for custom amounts, quick-log from notification action buttons
+- **🎮 Gamification** — 12 achievements with popup celebration, mascot variants (unlock via achievements), streak tracking
+- **📊 Monthly reports** — Auto-generated with glasses count, avg/day, best streak, goal hits, quarterly trends, natural language highlights
+- **📈 Pattern analysis** — Peak drinking hours, lull period detection, day-of-week insights
+- **🧮 Smart goal calculator** — Weight-based formula (kg × 0.033), activity boost toggle, adaptive goal suggestions
+- **🌤️ Weather-aware** — Open-Meteo integration, heat advisory banner, automatic interval shortening on hot days
+- **💾 Data export** — CSV export for spreadsheets, full JSON backup & restore with share sheet
+- **🎨 Custom notifications** — Choose from 7 message categories (encouraging, funny, health facts, etc.) with context-aware picker
+- **🤖 Animated mascot** — Water droplet character with 4 expressions, 4 styles, and celebration bounce
 
 ## 📸 Screenshots
 
@@ -57,19 +61,25 @@ Plenty/
 ├── App.js                  # Root navigator (bottom tabs)
 ├── app.json                # Expo configuration
 ├── screens/
-│   ├── HomeScreen.js       # Reminder controls + quick log
-│   ├── LogScreen.js        # Today's drink history
-│   ├── AchievementsScreen.js # Achievement gallery
-│   └── SettingsScreen.js   # Sound, quiet hours, reset
+│   ├── HomeScreen.js       # Reminder controls, quick log, weather banner, peak time, goal suggestions
+│   ├── LogScreen.js        # Drink history, weekly chart, monthly report, pattern insights
+│   ├── AchievementsScreen.js # Achievement gallery grid
+│   └── SettingsScreen.js   # Sound, quiet hours, goal calc, activity, export/import, messages, mascot
 ├── components/
 │   ├── ErrorBoundary.js    # Crash catcher
-│   ├── Mascot.js           # Water droplet mascot
-│   └── AchievementPopup.js # Celebration modal
+│   ├── Mascot.js           # Water droplet mascot with expressions, variants, celebration
+│   ├── AchievementPopup.js # Celebration modal with confetti
+│   ├── MonthlyReport.js    # Collapsible report card with stats, highlights, quarterly trends
+│   └── WeatherBanner.js    # Heat advisory banner on Home screen
 ├── utils/
-│   ├── storage.js          # AsyncStorage (logs + settings)
-│   ├── notifications.js    # Notification helpers
-│   ├── achievements.js     # Achievement definitions + checker
-│   └── messages.js         # Notification message pool
+│   ├── storage.js          # AsyncStorage (logs, settings, achievements, monthly cache)
+│   ├── notifications.js    # Permission, schedule, cancel, escalation, weather adjustment
+│   ├── achievements.js     # 12 achievement definitions + checker engine
+│   ├── messages.js         # 30 messages in 7 categories + context-aware picker
+│   ├── reports.js          # Monthly/quarterly report generation + caching
+│   ├── patterns.js         # Peak hour, lull, day-of-week analysis
+│   ├── weather.js          # Open-Meteo API, caching, heat adjustment
+│   └── export.js           # CSV/JSON export and import via share sheet
 ├── assets/                 # Icons, splash screen
 └── docs/                   # Sprint plans and documentation
     ├── SPRINT2.md
@@ -96,9 +106,9 @@ See [`docs/SPRINT2.md`](docs/SPRINT2.md) for the full roadmap.
 ## 📋 Roadmap
 
 - [x] Sprint 1 — Core app (logging, settings, dev logs)
-- [x] Sprint 2 — Development build + real notifications ([docs/SPRINT2.md](docs/SPRINT2.md))
+- [x] Sprint 2 — Development build + real notifications
 - [x] Sprint 3 — 🎮 Gamification & Motivation ([docs/SPRINT3.md](docs/SPRINT3.md))
-- [ ] Sprint 4 — 📊 Smarter Insights & Intelligence ([docs/SPRINT4.md](docs/SPRINT4.md))
+- [x] Sprint 4 — 📊 Smarter Insights & Intelligence ([docs/SPRINT4.md](docs/SPRINT4.md))
 - [ ] Sprint 5 — 🎨 Polish, Platform & Social ([docs/SPRINT5.md](docs/SPRINT5.md))
 
 ## 🛠️ Built With

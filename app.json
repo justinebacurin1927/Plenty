@@ -9,7 +9,10 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Plenty uses your location to fetch local weather and adjust hydration reminders on hot days."
+      }
     },
     "android": {
       "package": "com.justine7417.plenty",
@@ -31,7 +34,10 @@
           "color": "#4A90D9"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-sharing",
+      "expo-location",
+      "expo-document-picker"
     ],
     "extra": {
       "eas": {

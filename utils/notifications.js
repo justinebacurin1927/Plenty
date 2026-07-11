@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { pickMessage } from "./messages";
 import { getSettings, getTodayLogs, getLastLogTime, saveSettings, addLog, incrementAchievementProgress } from "./storage";
+import { getCachedWeather, getHeatAdjustedInterval } from "./weather";
 
 // ─── Foreground notification handler ─────────────────
 
@@ -225,6 +226,20 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
       console.log(`🔴 Alert tier — interval reduced to ${delaySeconds}s`);
     }
 
+    // ─── Weather-based heat adjustment (D3) ─────────
+    try {
+      const weather = await getCachedWeather();
+      if (weather && weather.temp !== null) {
+        const adjusted = getHeatAdjustedInterval(weather.temp, delaySeconds);
+        if (adjusted < delaySeconds) {
+          delaySeconds = adjusted;
+          console.log(`☀️ Heat adjustment: interval reduced to ${delaySeconds}s (${Math.round(weather.temp)}°C)`);
+        }
+      }
+    } catch (e) {
+      // Weather cache may not exist — no adjustment needed
+    }
+
     // ─── Quiet hours ────────────────────────────────
     if (quietHours.enabled && isInQuietHours(quietHours.start, quietHours.end)) {
       delaySeconds = Math.max(minutesUntil(quietHours.end) * 60, 60);
@@ -237,7 +252,8 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
     const settings = await getSettings();
     const todayLogs = await getTodayLogs();
     const todayMl = todayLogs.reduce((sum, entry) => sum + (entry.amount || 250), 0);
-    const goalMl = (settings.dailyGoal || 8) * 250;
+    const effectiveGoal = settings.dailyGoal + (settings.activityAdjustment ? 3 : 0); // +3 glasses if exercised
+    const goalMl = (effectiveGoal || 8) * 250;
     const goalProgress = Math.round((todayMl / goalMl) * 100);
     const goalGlassesLeft = Math.max(Math.round((goalMl - todayMl) / 250), 0);
 

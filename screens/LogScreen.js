@@ -9,7 +9,9 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Mascot, { getRandomMessage } from "../components/Mascot";
-import { getTodayLogs, getDailyTotals, getSettings } from "../utils/storage";
+import MonthlyReport from "../components/MonthlyReport";
+import { getTodayLogs, getDailyTotals, getSettings, getLogs } from "../utils/storage";
+import { getLowestHydrationDay } from "../utils/patterns";
 
 const MAX_BAR = 200; // max visual height
 
@@ -18,6 +20,7 @@ export default function LogScreen() {
   const [weekly, setWeekly] = useState([]);
   const [mascotVariant, setMascotVariant] = useState("classic");
   const [mascotExpression, setMascotExpression] = useState("happy");
+  const [lowDayPattern, setLowDayPattern] = useState(null);
   const [mascotMessage, setMascotMessage] = useState(null);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
 
@@ -41,6 +44,19 @@ export default function LogScreen() {
           setWeekly(days);
           const settings = await getSettings();
           setMascotVariant(settings.mascotVariant || "classic");
+
+          // Day-of-week pattern (B5)
+          try {
+            const allLogs = await getLogs();
+            const lowDay = getLowestHydrationDay(allLogs);
+            if (lowDay && lowDay.count >= 3) {
+              setLowDayPattern(lowDay);
+            } else {
+              setLowDayPattern(null);
+            }
+          } catch (e) {
+            // ignore
+          }
         } catch (e) {
           console.error("Failed to load log data:", e.message, e.stack);
         }
@@ -66,6 +82,9 @@ export default function LogScreen() {
           </View>
         </View>
       </View>
+
+      {/* ── Monthly Report (A3) ── */}
+      <MonthlyReport />
 
       {/* ── Weekly Bar Chart ── */}
       {weekly.length > 0 && (
@@ -93,6 +112,16 @@ export default function LogScreen() {
               );
             })}
           </View>
+
+          {/* Day-of-week insight (B5) */}
+          {lowDayPattern && (
+            <View style={styles.patternHint}>
+              <Ionicons name="analytics-outline" size={14} color="#6B8CAB" />
+              <Text style={styles.patternHintText}>
+                You drink least on {lowDayPattern.name}s (avg {lowDayPattern.avg}ml)
+              </Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -204,6 +233,23 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6B8CAB",
     marginTop: 6,
+  },
+
+  // ── Pattern Hint ──
+  patternHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#E8F0FE",
+  },
+  patternHintText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6B8CAB",
+    flex: 1,
   },
 
   // ── Empty ──

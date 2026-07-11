@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const KEYS = {
   LOGS: "@plenty_logs",
   SETTINGS: "@plenty_settings",
+  MONTHLY_CACHE: "@plenty_monthly_cache",
 };
 
 const DEFAULT_SETTINGS = {
@@ -23,6 +24,14 @@ const DEFAULT_SETTINGS = {
   },
   lastMessageId: null,
   mascotVariant: "classic",
+
+  // Sprint 4 — Goal Intelligence (Epic C)
+  weightKg: null,
+  weightUnit: "kg", // "kg" | "lbs"
+  activityAdjustment: false, // "I exercised today" toggle
+
+  // Sprint 4 — Weather fallback (Epic D)
+  manualLocation: "", // city or zip code if location denied
 };
 
 // ─── Logs ───────────────────────────────────────────
@@ -187,4 +196,53 @@ export async function incrementAchievementProgress(id) {
 
 export async function resetAchievementProgress() {
   await AsyncStorage.removeItem(ACHIEVEMENT_KEYS.PROGRESS);
+}
+
+// ─── Monthly Report Cache (Epic A) ─────────────────────
+
+export async function getMonthlyCache() {
+  const raw = await AsyncStorage.getItem(KEYS.MONTHLY_CACHE);
+  return raw ? JSON.parse(raw) : {};
+}
+
+export async function setMonthlyCache(reports) {
+  await AsyncStorage.setItem(KEYS.MONTHLY_CACHE, JSON.stringify(reports));
+}
+
+// ─── Export / Import (Epic E) ───────────────────────────
+
+export async function getAllLogs() {
+  return await getLogs();
+}
+
+export async function importLogs(logs) {
+  await AsyncStorage.setItem(KEYS.LOGS, JSON.stringify(logs));
+}
+
+export async function importSettings(settings) {
+  await AsyncStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+}
+
+export async function importAchievements(unlocked, progress) {
+  await AsyncStorage.setItem(ACHIEVEMENT_KEYS.UNLOCKED, JSON.stringify(unlocked || []));
+  await AsyncStorage.setItem(ACHIEVEMENT_KEYS.PROGRESS, JSON.stringify(progress || {}));
+}
+
+// ─── Goal Intelligence Helpers (Epic C) ─────────────────
+
+/** Weight-based daily goal in glasses (250ml each) */
+export function weightBasedGoal(weightKg) {
+  if (!weightKg || weightKg <= 0) return null;
+  const liters = weightKg * 0.033;
+  return Math.max(Math.round(liters / 0.25), 1);
+}
+
+/** Convert lbs to kg */
+export function lbsToKg(lbs) {
+  return lbs * 0.453592;
+}
+
+/** Add activity boost to goal */
+export function activityBoostedGoal(baseGoal, exercised) {
+  return exercised ? baseGoal + Math.round(750 / 250) : baseGoal; // +750ml ≈ +3 glasses
 }

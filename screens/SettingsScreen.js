@@ -8,10 +8,26 @@ import {
   Switch,
   TouchableOpacity,
   Alert,
+  TextInput,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import Mascot, { getRandomMessage } from "../components/Mascot";
-import { getSettings, saveSettings, clearLogs, resetAchievementProgress, getUnlockedAchievements } from "../utils/storage";
+import {
+  getSettings,
+  saveSettings,
+  clearLogs,
+  resetAchievementProgress,
+  getUnlockedAchievements,
+  getLogs,
+  weightBasedGoal,
+  lbsToKg,
+  activityBoostedGoal,
+} from "../utils/storage";
+import { exportToCSV, exportToJSON, importFromJSON } from "../utils/export";
+import { clearWeatherCache } from "../utils/weather";
+import { getLullPeriods, getPeakHours } from "../utils/patterns";
 import { MASCOT_VARIANTS } from "../components/Mascot";
 
 const MESSAGE_CATEGORIES = [
@@ -28,6 +44,10 @@ export default function SettingsScreen() {
   const [mascotExpression, setMascotExpression] = useState("happy");
   const [mascotMessage, setMascotMessage] = useState(null);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
+  const [weightText, setWeightText] = useState("");
+  const [patternLulls, setPatternLulls] = useState([]);
+  const [patternPeaks, setPatternPeaks] = useState([]);
+  const [exporting, setExporting] = useState(null); // "csv" | "json" | "importing" | null
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
 
   const cycleExpression = () => {
@@ -53,6 +73,16 @@ export default function SettingsScreen() {
     ]);
     setSettings(s);
     setUnlockedAchievements(unlocked);
+    if (s.weightKg) setWeightText(String(s.weightKg));
+
+    // Load pattern data
+    try {
+      const logs = await getLogs();
+      setPatternLulls(getLullPeriods(logs));
+      setPatternPeaks(getPeakHours(logs));
+    } catch (e) {
+      // ignore
+    }
   };
 
   const update = async (key, value) => {
@@ -93,6 +123,10 @@ export default function SettingsScreen() {
                 },
                 lastMessageId: null,
                 mascotVariant: "classic",
+                weightKg: null,
+                weightUnit: "kg",
+                activityAdjustment: false,
+                manualLocation: "",
               });
               await loadSettings();
             } catch (e) {
@@ -190,6 +224,233 @@ export default function SettingsScreen() {
           ))}
         </View>
       </View>
+
+      {/* ── Weight-Based Goal (C1) ── */}
+      <View style={styles.row}>
+        <View style={styles.rowLeft}>
+          <Ionicons name="scale" size={22} color="#4A90D9" />
+          <View>
+            <Text style={styles.rowLabel}>Weight-Based Goal</Text>
+            <Text style={styles.rowHint}>Auto-calculates daily goal</Text>
+          </View>
+        </View>
+      </View>
+      <View style={styles.weightRow}>
+        <TextInput
+          style={styles.weightInput}
+          placeholder="Weight"
+          placeholderTextColor="#A0B8D0"
+          keyboardType="decimal-pad"
+          value={weightText}
+          onChangeText={(t) => {
+            setWeightText(t);
+            const val = parseFloat(t);
+            if (val > 0 && val < 500) {
+              const kg = settings.weightUnit === "lbs" ? lbsToKg(val) : val;
+              const goal = weightBasedGoal(kg);
+              if (goal && goal !== settings.dailyGoal) {
+                update("weightKg", kg);
+                update("dailyGoal", goal);
+              }
+            }
+          }}
+        />
+        <TouchableOpacity
+          style={[styles.weightUnitChip, settings.weightUnit === "kg" && styles.unitActive]}
+          onPress={() => update("weightUnit", "kg")}
+        >
+          <Text style={[styles.unitText, settings.weightUnit === "kg" && styles.unitTextActive]}>
+            kg
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.weightUnitChip, settings.weightUnit === "lbs" && styles.unitActive]}
+          onPress={() => update("weightUnit", "lbs")}
+        >
+          <Text style={[styles.unitText, settings.weightUnit === "lbs" && styles.unitTextActive]}>
+            lbs
+          </Text>
+        </TouchableOpacity>
+        {settings.weightKg > 0 && (
+          <Text style={styles.weightResult}>
+            → {weightBasedGoal(settings.weightKg)} glasses/day
+          </Text>
+        )}
+      </View>
+
+      {/* ── Activity Adjustment (C2) ── */}
+      <View style={styles.row}>
+        <View style={styles.rowLeft}>
+          <Ionicons name="fitness" size={22} color="#4A90D9" />
+          <View>
+            <Text style={styles.rowLabel}>Exercised Today</Text>
+            <Text style={styles.rowHint}>+750ml / +3 glasses boost</Text>
+          </View>
+        </View>
+        <Switch
+          value={settings.activityAdjustment || false}
+          onValueChange={(v) => update("activityAdjustment", v)}
+          trackColor={{ false: "#D6E4F0", true: "#A0C4E8" }}
+          thumbColor={settings.activityAdjustment ? "#4A90D9" : "#f4f3f4"}
+        />
+      </View>
+
+      {/* ── Pattern Insights (B3-B4) ── */}
+      {patternPeaks.length > 0 && (
+        <View style={styles.sectionHeader}>
+          <Ionicons name="analytics" size={18} color="#4A90D9" />
+          <Text style={styles.sectionHeaderText}>Your Patterns</Text>
+        </View>
+      )}
+      {patternPeaks.length > 0 && (
+        <View style={styles.row}>
+          <View style={styles.rowLeft}>
+            <Ionicons name="trending-up" size={20} color="#27AE60" />
+            <View>
+              <Text style={styles.rowLabel}>Peak Time</Text>
+              <Text style={styles.rowHint}>
+                Most hydrated: {patternPeaks.map((p) => p.label).join(", ")}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+      {patternLulls.length > 0 && (
+        <View style={styles.row}>
+          <View style={styles.rowLeft}>
+            <Ionicons name="trending-down" size={20} color="#E8596E" />
+            <View>
+              <Text style={styles.rowLabel}>Low Periods</Text>
+              <Text style={styles.rowHint}>
+                {patternLulls.filter(l => l.severity === "gap").map((l) => l.label).join(", ") || "Fewer logs in these times"}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* ── Manual Location Fallback (D5) ── */}
+      <View style={styles.sectionHeader}>
+        <Ionicons name="location" size={18} color="#4A90D9" />
+        <Text style={styles.sectionHeaderText}>Weather Location</Text>
+      </View>
+      <View style={styles.weightRow}>
+        <TextInput
+          style={[styles.weightInput, { flex: 2 }]}
+          placeholder="City or zip code"
+          placeholderTextColor="#A0B8D0"
+          value={settings.manualLocation || ""}
+          onChangeText={(t) => update("manualLocation", t)}
+        />
+        <TouchableOpacity
+          style={styles.weightUnitChip}
+          onPress={() => {
+            update("manualLocation", "");
+            clearWeatherCache().catch(() => {});
+          }}
+        >
+          <Text style={styles.unitText}>Clear</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Data Export & Backup (E1-E4) ── */}
+      <View style={styles.sectionHeader}>
+        <Ionicons name="download" size={18} color="#4A90D9" />
+        <Text style={styles.sectionHeaderText}>Data Export & Backup</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.row}
+        onPress={async () => {
+          setExporting("csv");
+          try {
+            await exportToCSV();
+          } catch (e) {
+            Alert.alert("Export Failed", e.message);
+          } finally {
+            setExporting(null);
+          }
+        }}
+        disabled={exporting !== null}
+      >
+        <View style={styles.rowLeft}>
+          <Ionicons name="grid-outline" size={22} color="#4A90D9" />
+          <View>
+            <Text style={styles.rowLabel}>
+              {exporting === "csv" ? "Exporting..." : "Export CSV"}
+            </Text>
+            <Text style={styles.rowHint}>Share logs as spreadsheet file</Text>
+          </View>
+        </View>
+        <Ionicons name="share-outline" size={20} color="#B8D0E8" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.row}
+        onPress={async () => {
+          setExporting("json");
+          try {
+            await exportToJSON();
+          } catch (e) {
+            Alert.alert("Backup Failed", e.message);
+          } finally {
+            setExporting(null);
+          }
+        }}
+        disabled={exporting !== null}
+      >
+        <View style={styles.rowLeft}>
+          <Ionicons name="archive-outline" size={22} color="#4A90D9" />
+          <View>
+            <Text style={styles.rowLabel}>
+              {exporting === "json" ? "Exporting..." : "Export JSON Backup"}
+            </Text>
+            <Text style={styles.rowHint}>Full backup with settings & achievements</Text>
+          </View>
+        </View>
+        <Ionicons name="share-outline" size={20} color="#B8D0E8" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.row}
+        onPress={async () => {
+          try {
+            setExporting("importing");
+            const result = await DocumentPicker.getDocumentAsync({
+              type: "application/json",
+              copyToCacheDirectory: true,
+            });
+
+            if (result.canceled) return;
+            const file = result.assets?.[0];
+            if (!file) return;
+
+            const response = await fetch(file.uri);
+            const jsonString = await response.text();
+            const summary = await importFromJSON(jsonString);
+
+            Alert.alert(
+              "Restored!",
+              `Imported ${summary.logs} log entries.\n${summary.hasSettings ? "✅ Settings restored\n" : ""}${summary.hasAchievements ? "✅ Achievements restored" : ""}`,
+              [{ text: "Great!" }]
+            );
+            await loadSettings();
+          } catch (e) {
+            Alert.alert("Import Failed", e.message || "Could not read backup file");
+          } finally {
+            setExporting(null);
+          }
+        }}
+        disabled={exporting !== null}
+      >
+        <View style={styles.rowLeft}>
+          <Ionicons name="cloud-upload-outline" size={22} color="#4A90D9" />
+          <View>
+            <Text style={styles.rowLabel}>
+              {exporting === "importing" ? "Importing..." : "Import JSON Backup"}
+            </Text>
+            <Text style={styles.rowHint}>Restore from a previous backup</Text>
+          </View>
+        </View>
+        <Ionicons name="enter-outline" size={20} color="#B8D0E8" />
+      </TouchableOpacity>
 
       {/* ── Notification Messages ── */}
       <View style={styles.sectionHeader}>
@@ -396,6 +657,60 @@ const styles = StyleSheet.create({
   },
   catIcon: {
     fontSize: 22,
+  },
+
+  // ── Weight Goal ──
+  weightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#fff",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginHorizontal: 24,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    marginBottom: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  weightInput: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "#F5F9FF",
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A3A5C",
+  },
+  weightUnitChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: "#F0F4F8",
+    borderWidth: 1,
+    borderColor: "#D6E4F0",
+  },
+  unitActive: {
+    backgroundColor: "#4A90D9",
+    borderColor: "#4A90D9",
+  },
+  unitText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#4A6A85",
+  },
+  unitTextActive: {
+    color: "#fff",
+  },
+  weightResult: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#27AE60",
   },
 
   // ── Mascot Style Cards ──

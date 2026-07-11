@@ -13,8 +13,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Mascot, { getRandomMessage, streakToExpression } from "../components/Mascot";
 import AchievementPopup from "../components/AchievementPopup";
-import { getTodayLogs, addLog, getSettings, getStreak } from "../utils/storage";
+import WeatherBanner from "../components/WeatherBanner";
+import { getTodayLogs, addLog, getSettings, getStreak, getLogs } from "../utils/storage";
 import { checkAchievements } from "../utils/achievements";
+import { getPeakHoursSummary } from "../utils/patterns";
 import {
   requestPermission,
   scheduleWaterReminder,
@@ -66,6 +68,12 @@ export default function HomeScreen({ navigation }) {
   const [escalationTier, setEscalationTier] = useState("normal");
   const [mascotCelebration, setMascotCelebration] = useState(false);
   const [mascotVariant, setMascotVariant] = useState("classic");
+  const [peakTimeHint, setPeakTimeHint] = useState(null);
+  const [hasWeatherLocation, setHasWeatherLocation] = useState(false);
+  const [weatherLat, setWeatherLat] = useState(null);
+  const [weatherLon, setWeatherLon] = useState(null);
+  const [goalSuggestion, setGoalSuggestion] = useState(null); // {text, action} | null
+  const [activityEnabled, setActivityEnabled] = useState(false);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
 
   // Load everything on mount
@@ -86,6 +94,7 @@ export default function HomeScreen({ navigation }) {
     const settings = await getSettings();
     setDailyGoal(settings.dailyGoal);
     setDrinkAmount(settings.drinkAmount);
+    setActivityEnabled(settings.activityAdjustment || false);
     const logs = await getTodayLogs();
     const totalMl = logs.reduce((sum, entry) => sum + (entry.amount || 250), 0);
     setTodayCount(logs.length);
@@ -96,6 +105,64 @@ export default function HomeScreen({ navigation }) {
     setMascotExpression(streakToExpression(s));
     const tier = await getEscalationTier();
     setEscalationTier(tier);
+
+    // ── Peak time hint (B2) ──
+    try {
+      const allLogs = await getLogs();
+      const hint = getPeakHoursSummary(allLogs);
+      setPeakTimeHint(hint);
+    } catch (e) {
+      // ignore
+    }
+
+    // ── Goal suggestion (C3) ──
+    try {
+      const allLogs = await getLogs();
+      const today = new Date();
+      const recentDays = [];
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+        const dayLogs = allLogs.filter((entry) => {
+          const t = new Date(entry.timestamp);
+          return t.getFullYear() === d.getFullYear() &&
+            t.getMonth() === d.getMonth() &&
+            t.getDate() === d.getDate();
+        });
+        const totalMl = dayLogs.reduce((sum, e) => sum + (e.amount || 250), 0);
+        const dayGlasses = Math.round(totalMl / 250);
+        recentDays.push(dayGlasses);
+      }
+      const avgRecent = recentDays.reduce((a, b) => a + b, 0) / recentDays.length;
+      const currentGoal = settings.dailyGoal || 8;
+      if (avgRecent >= currentGoal * 1.2 && currentGoal < 15) {
+        setGoalSuggestion({
+          text: `You averaged ${Math.round(avgRecent)} glasses/day — try increasing your goal to ${currentGoal + 2}?`,
+        });
+      } else if (avgRecent < currentGoal * 0.6 && avgRecent > 0 && currentGoal > 4) {
+        setGoalSuggestion({
+          text: `You averaged ${Math.round(avgRecent)} glasses/day — consider lowering your goal to ${Math.max(currentGoal - 2, 4)}`,
+        });
+      } else {
+        setGoalSuggestion(null);
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // ── Location request (D2) ──
+    try {
+      const { requestForegroundPermissionsAsync, getCurrentPositionAsync } = require("expo-location");
+      const { status } = await requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const pos = await getCurrentPositionAsync({});
+        setWeatherLat(pos.coords.latitude);
+        setWeatherLon(pos.coords.longitude);
+        setHasWeatherLocation(true);
+      }
+    } catch (e) {
+      // location not available or denied — weather gracefully degrades
+      console.log("ℹ️ Location not available for weather");
+    }
   };
 
   // Refresh data when screen comes into focus
@@ -227,6 +294,21 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
+        {/* ── Peak Time Hint (B2) ── */}
+        {peakTimeHint && (
+          <View style={styles.peakHint}>
+            <Ionicons name="time-outline" size={14} color="#4A90D9" />
+            <Text style={styles.peakHintText}>{peakTimeHint}</Text>
+          </View>
+        )}
+
+        {/* ── Weather Banner (Epic D) ── */}
+        <WeatherBanner
+          hasLocation={hasWeatherLocation}
+          lat={weatherLat}
+          lon={weatherLon}
+        />
+
         {/* ── Escalation Banner ── */}
         {escalationTier !== "normal" && (
           <View style={[styles.escalationBanner, escalationTier === "alert" ? styles.escalationAlert : styles.escalationWarning]}>
@@ -256,6 +338,24 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.goalMet}>🎉 Goal reached!</Text>
           )}
         </View>
+
+        {/* ── Activity Boost (C2) ── */}
+        {activityEnabled && (
+          <View style={styles.activityHint}>
+            <Ionicons name="fitness" size={14} color="#27AE60" />
+            <Text style={styles.activityHintText}>
+              Exercised today — goal boosted by 3 glasses
+            </Text>
+          </View>
+        )}
+
+        {/* ── Goal Suggestion (C3) ── */}
+        {goalSuggestion && (
+          <View style={styles.goalSuggestion}>
+            <Ionicons name="bulb-outline" size={16} color="#4A90D9" />
+            <Text style={styles.goalSuggestionText}>{goalSuggestion.text}</Text>
+          </View>
+        )}
 
         {/* ── Interval Picker ── */}
         <View style={styles.section}>
@@ -440,6 +540,21 @@ const styles = StyleSheet.create({
     color: "#E67E22",
   },
 
+  // ── Peak Time Hint ──
+  peakHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  peakHintText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4A90D9",
+  },
+
   // ── Escalation Banner ──
   escalationBanner: {
     flexDirection: "row",
@@ -512,6 +627,42 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#27AE60",
     marginTop: 8,
+  },
+
+  // ── Activity Boost ──
+  activityHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    backgroundColor: "#F0FFF4",
+    borderRadius: 10,
+  },
+  activityHintText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#27AE60",
+  },
+
+  // ── Goal Suggestion ──
+  goalSuggestion: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#FFF8E1",
+    borderRadius: 12,
+    width: "100%",
+  },
+  goalSuggestionText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#8D6E00",
+    flex: 1,
   },
 
   // ── Interval ──
