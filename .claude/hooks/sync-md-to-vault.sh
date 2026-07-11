@@ -12,7 +12,16 @@ MAP["SPRINT4.md"]="Sprint 4 - Insights.md"
 MAP["SPRINT5.md"]="Sprint 5 - Polish.md"
 MAP["SPRINT3_EPIC_A_DEEP_DIVE.md"]="Sprint 3 - Epic A Deep Dive.md"
 
+# Sync project root .md files
 for md in "$PROJECT"/*.md; do
+  f=$(basename "$md")
+  [ -f "$md" ] || continue
+  target="${MAP[$f]:-$f}"
+  cp -u "$md" "$VAULT/$target"
+done
+
+# Sync docs/*.md files
+for md in "$PROJECT"/docs/*.md; do
   f=$(basename "$md")
   [ -f "$md" ] || continue
   target="${MAP[$f]:-$f}"

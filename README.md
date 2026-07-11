@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/icon.png" width="100" height="100" alt="Plenty icon">
-</p>
-
 <h1 align="center">💧 Plenty</h1>
 <p align="center"><em>A water drinking reminder app built with React Native + Expo</em></p>
 
@@ -63,16 +59,24 @@ Plenty/
 ├── screens/
 │   ├── HomeScreen.js       # Reminder controls + quick log
 │   ├── LogScreen.js        # Today's drink history
-│   ├── SettingsScreen.js   # Sound, quiet hours, reset
-│   └── DevLogScreen.js     # In-app console viewer
+│   ├── AchievementsScreen.js # Achievement gallery
+│   └── SettingsScreen.js   # Sound, quiet hours, reset
 ├── components/
-│   └── ErrorBoundary.js    # Crash catcher
+│   ├── ErrorBoundary.js    # Crash catcher
+│   ├── Mascot.js           # Water droplet mascot
+│   └── AchievementPopup.js # Celebration modal
 ├── utils/
 │   ├── storage.js          # AsyncStorage (logs + settings)
-│   ├── notifications.js    # Lazy-loaded notification helpers
-│   └── logger.js           # Console interceptor
+│   ├── notifications.js    # Notification helpers
+│   ├── achievements.js     # Achievement definitions + checker
+│   └── messages.js         # Notification message pool
 ├── assets/                 # Icons, splash screen
-└── SPRINT2.md              # Sprint 2 roadmap
+└── docs/                   # Sprint plans and documentation
+    ├── SPRINT2.md
+    ├── SPRINT3.md
+    ├── SPRINT4.md
+    ├── SPRINT5.md
+    └── SPRINT3_EPIC_A_DEEP_DIVE.md
 ```
 
 ## 🧪 Development Build
@@ -87,15 +91,15 @@ eas build --platform android --profile development
 npx expo start --dev-client
 ```
 
-See [`SPRINT2.md`](SPRINT2.md) for the full roadmap.
+See [`docs/SPRINT2.md`](docs/SPRINT2.md) for the full roadmap.
 
 ## 📋 Roadmap
 
 - [x] Sprint 1 — Core app (logging, settings, dev logs)
-- [x] Sprint 2 — Development build + real notifications ([SPRINT2.md](SPRINT2.md))
-- [x] Sprint 3 — 🎮 Gamification & Motivation ([SPRINT3.md](SPRINT3.md))
-- [ ] Sprint 4 — 📊 Smarter Insights & Intelligence ([SPRINT4.md](SPRINT4.md))
-- [ ] Sprint 5 — 🎨 Polish, Platform & Social ([SPRINT5.md](SPRINT5.md))
+- [x] Sprint 2 — Development build + real notifications ([docs/SPRINT2.md](docs/SPRINT2.md))
+- [x] Sprint 3 — 🎮 Gamification & Motivation ([docs/SPRINT3.md](docs/SPRINT3.md))
+- [ ] Sprint 4 — 📊 Smarter Insights & Intelligence ([docs/SPRINT4.md](docs/SPRINT4.md))
+- [ ] Sprint 5 — 🎨 Polish, Platform & Social ([docs/SPRINT5.md](docs/SPRINT5.md))
 
 ## 🛠️ Built With
 

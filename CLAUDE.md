@@ -28,10 +28,10 @@ A water drinking reminder app built with React Native + Expo.
 - `utils/storage.js` — AsyncStorage for logs + settings
 - `app.json` — Expo config with expo-notifications plugin
 - `DOCUMENTATION.md` — full planning and design doc
-- `SPRINT3.md` — Gamification & Motivation plan
-- `SPRINT4.md` — Insights & Intelligence plan
-- `SPRINT5.md` — Polish, Platform & Social plan
-- `SPRINT3_EPIC_A_DEEP_DIVE.md` — Epic A implementation breakdown
+- `docs/SPRINT3.md` — Gamification & Motivation plan
+- `docs/SPRINT4.md` — Insights & Intelligence plan
+- `docs/SPRINT5.md` — Polish, Platform & Social plan
+- `docs/SPRINT3_EPIC_A_DEEP_DIVE.md` — Epic A implementation breakdown
 
 ## Auto-Sync
 - `.md` files in this project auto-copy to `~/Documents/Obsidian Vault/Plenty/` via post-tool-use hook
