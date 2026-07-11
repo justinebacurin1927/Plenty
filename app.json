@@ -1,8 +1,10 @@
 {
   "expo": {
+    "owner": "justine7417",
     "name": "Plenty",
     "slug": "Plenty",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,6 +12,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.justine7417.plenty",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -29,6 +32,11 @@
         }
       ],
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7c4df0d9-0871-479d-a540-b253bdb76dac"
+      }
+    }
   }
 }

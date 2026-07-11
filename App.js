@@ -7,6 +7,10 @@ import { Ionicons } from "@expo/vector-icons";
 // ═══ Logger — captures console.log/warn/error from boot ═══
 import "./utils/logger";
 
+// ═══ Notification response handler (snooze / quick-log) ═══
+import { setupResponseHandler } from "./utils/notifications";
+setupResponseHandler();
+
 // ═══ Capture original console AFTER logger installs its override ═══
 // The logger keeps a reference to the REAL console.error internally,
 // so calling this goes through logger → real console.error
@@ -44,16 +48,16 @@ if (global.ErrorUtils && typeof global.ErrorUtils.reportError === "function") {
 import ErrorBoundary from "./components/ErrorBoundary";
 import HomeScreen from "./screens/HomeScreen";
 import LogScreen from "./screens/LogScreen";
+import AchievementsScreen from "./screens/AchievementsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
-import DevLogScreen from "./screens/DevLogScreen";
 
 const Tab = createBottomTabNavigator();
 
 const TAB_ICONS = {
   Home: "home",
   Log: "list",
+  Achievements: "trophy",
   Settings: "settings",
-  "Dev Logs": "bug",
 };
 
 export default function App() {
@@ -84,8 +88,8 @@ export default function App() {
         >
           <Tab.Screen name="Home" component={HomeScreen} />
           <Tab.Screen name="Log" component={LogScreen} />
+          <Tab.Screen name="Achievements" component={AchievementsScreen} />
           <Tab.Screen name="Settings" component={SettingsScreen} />
-          <Tab.Screen name="Dev Logs" component={DevLogScreen} />
         </Tab.Navigator>
       </NavigationContainer>
     </ErrorBoundary>

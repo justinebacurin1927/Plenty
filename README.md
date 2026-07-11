@@ -92,8 +92,10 @@ See [`SPRINT2.md`](SPRINT2.md) for the full roadmap.
 ## 📋 Roadmap
 
 - [x] Sprint 1 — Core app (logging, settings, dev logs)
-- [ ] Sprint 2 — Development build + real notifications
-- [ ] Sprint 3 — Daily goal, custom amounts, weekly stats
+- [x] Sprint 2 — Development build + real notifications ([SPRINT2.md](SPRINT2.md))
+- [x] Sprint 3 — 🎮 Gamification & Motivation ([SPRINT3.md](SPRINT3.md))
+- [ ] Sprint 4 — 📊 Smarter Insights & Intelligence ([SPRINT4.md](SPRINT4.md))
+- [ ] Sprint 5 — 🎨 Polish, Platform & Social ([SPRINT5.md](SPRINT5.md))
 
 ## 🛠️ Built With
 

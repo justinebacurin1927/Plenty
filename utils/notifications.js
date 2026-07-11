@@ -1,71 +1,208 @@
+import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import Constants from "expo-constants";
+import { pickMessage } from "./messages";
+import { getSettings, getTodayLogs, getLastLogTime, saveSettings, addLog, incrementAchievementProgress } from "./storage";
 
-// expo-notifications cannot be used in Expo Go on Android SDK 53+.
-// Its top-level initialization throws even with dynamic import().
-// Detect the environment upfront and skip the module entirely.
-const isExpoGo = Constants.appOwnership === "expo";
+// ─── Foreground notification handler ─────────────────
 
-// ─── Lazy loader (never called in Expo Go) ──────────
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
-let Notifications = null;
-let initAttempted = false;
+// ─── Helpers ─────────────────────────────────────────
 
-async function ensureNotifications() {
-  if (isExpoGo) return null;
-  if (Notifications) return Notifications;
-  if (initAttempted) return null;
-  initAttempted = true;
+function isInQuietHours(start, end) {
+  const now = new Date();
+  const current = now.getHours() * 60 + now.getMinutes();
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  const startMin = startH * 60 + startM;
+  const endMin = endH * 60 + endM;
+
+  if (startMin <= endMin) {
+    return current >= startMin && current <= endMin;
+  }
+  return current >= startMin || current <= endMin;
+}
+
+function minutesUntil(end) {
+  const now = new Date();
+  const current = now.getHours() * 60 + now.getMinutes();
+  const [endH, endM] = end.split(":").map(Number);
+  const endMin = endH * 60 + endM;
+
+  if (endMin > current) return endMin - current;
+  return 24 * 60 - current + endMin;
+}
+
+/**
+ * Determine escalation tier based on time since last drink log.
+ * Returns: "normal" | "warning" | "alert"
+ */
+export async function getEscalationTier() {
+  const lastLogTime = await getLastLogTime();
+  if (lastLogTime === null) return "alert"; // never logged
+  const hoursSinceLastLog = (Date.now() - lastLogTime) / 3600000;
+
+  if (hoursSinceLastLog > 4) return "alert";
+  if (hoursSinceLastLog > 2) return "warning";
+  return "normal";
+}
+
+// ─── Notification Channels (Android) ─────────────────
+
+async function ensureChannels() {
+  if (Platform.OS !== "android") return;
+
+  await Notifications.setNotificationChannelAsync("water-reminder", {
+    name: "Water Reminder",
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    sound: "default",
+  });
+
+  // C5: Escalation channel — stronger vibration for alert tier
+  await Notifications.setNotificationChannelAsync("water-reminder-escalation", {
+    name: "Water Reminder (Urgent)",
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 500, 200, 500, 200, 500, 200, 500],
+    sound: "default",
+  });
+}
+
+// ─── Notification Categories (Action Buttons — C1) ───
+
+export async function setupNotificationCategories() {
   try {
-    const mod = await import("expo-notifications");
-    try {
-      mod.default.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-        }),
-      });
-    } catch (_) {
-      // foreground handler isn't critical
-    }
-    Notifications = mod.default;
-    return Notifications;
+    await Notifications.setNotificationCategoryAsync("water-reminder", [
+      {
+        identifier: "drink",
+        buttonTitle: "💧 I drank!",
+        options: { opensAppToForeground: false },
+      },
+      {
+        identifier: "snooze",
+        buttonTitle: "Snooze 15m",
+        options: { opensAppToForeground: false },
+      },
+    ]);
+    console.log("✅ Notification categories set up");
   } catch (e) {
-    console.warn("⚠️ expo-notifications init failed:", e.message);
-    return null;
+    console.error("❌ Failed to set up notification categories:", e.message);
   }
 }
 
-// ─── Public API — all functions are safe if unavailable ──
+// ─── Response Handler (C2 + C3) ──────────────────────
+
+let _responseHandlerSetup = false;
+
+export function setupResponseHandler() {
+  if (_responseHandlerSetup) return;
+  _responseHandlerSetup = true;
+
+  Notifications.addNotificationResponseReceivedListener(async (response) => {
+    const { actionIdentifier, notification } = response;
+
+    try {
+      if (actionIdentifier === "snooze") {
+        await handleSnooze();
+      } else if (actionIdentifier === "drink") {
+        await handleQuickLog(notification);
+      }
+    } catch (e) {
+      console.error("❌ Notification response handler error:", e.message);
+    }
+  });
+}
+
+async function handleSnooze() {
+  console.log("⏰ Snoozing reminders for 15 minutes");
+  await cancelAllReminders();
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "💧 Time to drink water!",
+      body: "⏰ Snoozed reminder — time to hydrate!",
+      data: { type: "snooze-followup" },
+    },
+    trigger: {
+      type: "timeInterval",
+      seconds: 900, // 15 minutes
+      repeats: false,
+    },
+  });
+
+  console.log("✅ Snoozed — next reminder in 15 min");
+}
+
+async function handleQuickLog(notification) {
+  console.log("💧 Quick-logged 250ml from notification");
+  await addLog({ amount: 250, source: "notification" });
+
+  // ─── Speed Demon check ────────────────────────────
+  // If user responded within 60s of notification delivery, count it
+  if (notification?.date) {
+    const deliveredAt = new Date(notification.date).getTime();
+    const elapsed = Date.now() - deliveredAt;
+    if (elapsed < 60000) {
+      await incrementAchievementProgress("speed_demon");
+      console.log("⚡ Speed Demon progress +1 (responded in ${Math.round(elapsed / 1000)}s)");
+    }
+  }
+
+  // Reschedule normal reminders
+  const settings = await getSettings();
+  await scheduleWaterReminder(settings.intervalMinutes * 60, {
+    enabled: settings.quietHoursEnabled,
+    start: settings.quietHoursStart,
+    end: settings.quietHoursEnd,
+  });
+}
+
+// ─── Escalation-Aware Message Builder ─────────────────
+
+function buildEscalationContent(tier, message) {
+  const base = {
+    title: "💧 Time to drink water!",
+    body: message.text,
+    data: { type: "reminder", tier },
+    categoryIdentifier: "water-reminder",
+  };
+
+  if (Platform.OS === "android" && tier === "alert") {
+    base.channelId = "water-reminder-escalation";
+  }
+
+  if (tier === "alert") {
+    base.title = "🔴 Please drink water!";
+  } else if (tier === "warning") {
+    base.title = "⚠️ Don't forget to hydrate!";
+  }
+
+  return base;
+}
+
+// ─── Public API ──────────────────────────────────────
 
 export async function requestPermission() {
-  if (isExpoGo) {
-    console.log("ℹ️ Push notifications not available in Expo Go (SDK 53+)");
-    return false;
-  }
-  const notif = await ensureNotifications();
-  if (!notif) return false;
-
   try {
-    const { status: existing } = await notif.getPermissionsAsync();
+    const { status: existing } = await Notifications.getPermissionsAsync();
     let final = existing;
     if (existing !== "granted") {
-      const { status } = await notif.requestPermissionsAsync();
+      const { status } = await Notifications.requestPermissionsAsync();
       final = status;
     }
     if (final !== "granted") {
       console.warn("🚫 Notification permission not granted");
       return false;
     }
-    if (Platform.OS === "android") {
-      await notif.setNotificationChannelAsync("water-reminder", {
-        name: "Water Reminder",
-        importance: notif.AndroidImportance?.HIGH || 4,
-        vibrationPattern: [0, 250, 250, 250],
-        sound: "default",
-      });
-    }
+
+    await ensureChannels();
+    await setupNotificationCategories();
     return true;
   } catch (e) {
     console.error("❌ Failed to request notification permission:", e.message);
@@ -73,45 +210,81 @@ export async function requestPermission() {
   }
 }
 
-export async function scheduleWaterReminder(intervalMinutes) {
-  if (isExpoGo) {
-    console.log("ℹ️ Notifications unavailable — skipping schedule");
-    return;
-  }
-  const notif = await ensureNotifications();
-  if (!notif) return;
-
-  await cancelAllReminders(notif);
+export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings) {
+  await cancelAllReminders();
 
   try {
-    const id = await notif.scheduleNotificationAsync({
-      content: {
-        title: "💧 Time to drink water!",
-        body: "Stay hydrated — your body will thank you.",
-        sound: "default",
-      },
+    const quietHours = quietHoursSettings || { enabled: false };
+    let delaySeconds = intervalSeconds;
+
+    // ─── Escalation check (C4) ──────────────────────
+    const tier = await getEscalationTier();
+    if (tier === "alert") {
+      // Shorten interval to 5 min during alert tier
+      delaySeconds = Math.min(delaySeconds, 300);
+      console.log(`🔴 Alert tier — interval reduced to ${delaySeconds}s`);
+    }
+
+    // ─── Quiet hours ────────────────────────────────
+    if (quietHours.enabled && isInQuietHours(quietHours.start, quietHours.end)) {
+      delaySeconds = Math.max(minutesUntil(quietHours.end) * 60, 60);
+      console.log(
+        `🌙 In quiet hours — first reminder in ${Math.round(delaySeconds / 60)} minutes`
+      );
+    }
+
+    // ─── Pick a message ─────────────────────────────
+    const settings = await getSettings();
+    const todayLogs = await getTodayLogs();
+    const todayMl = todayLogs.reduce((sum, entry) => sum + (entry.amount || 250), 0);
+    const goalMl = (settings.dailyGoal || 8) * 250;
+    const goalProgress = Math.round((todayMl / goalMl) * 100);
+    const goalGlassesLeft = Math.max(Math.round((goalMl - todayMl) / 250), 0);
+
+    const catSettings = settings.messageCategories || {};
+    const enabledCategories = Object.keys(catSettings).filter((c) => catSettings[c]);
+
+    // C6: Urgent messages for escalation tiers
+    const escalationEnabled = [...enabledCategories];
+    if (tier !== "normal" && !escalationEnabled.includes("urgent")) {
+      escalationEnabled.push("urgent");
+    }
+
+    const message = pickMessage({
+      goalProgress,
+      goalGlassesLeft,
+      enabledCategories: escalationEnabled,
+      lastMessageId: settings.lastMessageId,
+    });
+
+    await saveSettings({ lastMessageId: message.id });
+
+    // ─── Build content (C6) ─────────────────────────
+    const content = buildEscalationContent(tier, message);
+
+    const id = await Notifications.scheduleNotificationAsync({
+      content,
       trigger: {
         type: "timeInterval",
-        seconds: intervalMinutes * 60,
+        seconds: delaySeconds,
         repeats: true,
       },
     });
-    console.log(`✅ Notification scheduled (ID: ${id})`);
+
+    console.log(
+      `✅ Notification scheduled (ID: ${id}) — tier: ${tier}, message: "${message.text}"`
+    );
     return id;
   } catch (e) {
     console.error("❌ Failed to schedule notification:", e.message);
   }
 }
 
-export async function cancelAllReminders(notifOverride) {
-  if (isExpoGo) return;
-  const notif = notifOverride || (await ensureNotifications());
-  if (!notif) return;
-
+export async function cancelAllReminders() {
   try {
-    const existing = await notif.getAllScheduledNotificationsAsync();
+    const existing = await Notifications.getAllScheduledNotificationsAsync();
     if (existing.length > 0) {
-      await notif.cancelAllScheduledNotificationsAsync();
+      await Notifications.cancelAllScheduledNotificationsAsync();
       console.log("✅ All reminders cancelled");
     }
   } catch (e) {
@@ -120,31 +293,23 @@ export async function cancelAllReminders(notifOverride) {
 }
 
 export async function getScheduledReminders() {
-  if (isExpoGo) return [];
-  const notif = await ensureNotifications();
-  if (!notif) return [];
-
   try {
-    return await notif.getAllScheduledNotificationsAsync();
+    return await Notifications.getAllScheduledNotificationsAsync();
   } catch (e) {
     console.error("❌ Failed to get reminders:", e.message);
     return [];
   }
 }
 
-export async function setupNotificationTapHandler(handler) {
-  if (isExpoGo) return null;
-  const notif = await ensureNotifications();
-  if (!notif) return null;
+export function setupNotificationTapHandler(handler) {
+  const subscription =
+    Notifications.addNotificationResponseReceivedListener((response) =>
+      handler(response.notification)
+    );
 
-  try {
-    const response = await notif.getLastNotificationResponseAsync();
+  Notifications.getLastNotificationResponseAsync().then((response) => {
     if (response) handler(response.notification);
-    return notif.addNotificationResponseReceivedListener((response) => {
-      handler(response.notification);
-    });
-  } catch (e) {
-    console.error("❌ Failed to set up notification tap handler:", e.message);
-    return null;
-  }
+  });
+
+  return subscription;
 }
