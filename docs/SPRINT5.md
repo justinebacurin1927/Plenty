@@ -166,14 +166,13 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 | `plugins/withPlentyWidget.js` | **New** — Config plugin for AndroidManifest |
 | `utils/widget.js` | **New** — JS bridge to native widget module |
 | `utils/health.js` | **New** — Health Connect sync service (read/write/permissions) |
+| `utils/share.js` | **New** — share image utility via expo-sharing |
+| `components/ShareCard.js` | **New** — ViewShot capture card for streak/achievement sharing |
 | `App.js` | **Edit** — wrap in ThemeProvider, tab bar uses theme colors |
-| `screens/HomeScreen.js` | **Edit** — adopt theme, refresh widget on log/load, sync to Health Connect |
+| `screens/HomeScreen.js` | **Edit** — adopt theme, refresh widget on log/load, sync to Health Connect, share streak button |
 | `screens/LogScreen.js` | **Edit** — adopt theme colors |
 | `screens/SettingsScreen.js` | **Edit** — adopt theme, add Auto/Light/Dark theme picker |
 | `screens/AchievementsScreen.js` | **Edit** — adopt theme colors, share button on unlocked achievements |
-| `components/ShareCard.js` | **New** — shareable streak/achievement card with ViewShot capture |
-| `utils/health.js` | **New** — Health Connect sync service (read/write/permissions) |
-| `utils/share.js` | **New** — share image utility via expo-sharing |
 | `components/Mascot.js` | **Edit** — speech bubble uses theme surface/text colors |
 | `components/MonthlyReport.js` | **Edit** — adopt theme colors |
 | `components/WeatherBanner.js` | **Edit** — adopt theme colors |
