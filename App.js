@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ═══ Logger — captures console.log/warn/error from boot ═══
 import "./utils/logger";
@@ -54,6 +55,7 @@ const TAB_ICONS = {
 
 function AppNavigator() {
   const { isDark, colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <NavigationContainer>
@@ -70,8 +72,8 @@ function AppNavigator() {
             backgroundColor: colors.tabBar,
             borderTopColor: colors.tabBarBorder,
             paddingTop: 6,
-            paddingBottom: 8,
-            height: 60,
+            paddingBottom: Math.max(insets.bottom, 8),
+            height: 60 + Math.max(insets.bottom, 8),
           },
           tabBarLabelStyle: {
             fontSize: 12,
@@ -90,10 +92,12 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <ThemeProvider>
-        <AppNavigator />
-      </ThemeProvider>
-    </ErrorBoundary>
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <AppNavigator />
+        </ThemeProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }

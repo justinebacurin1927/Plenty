@@ -5,6 +5,7 @@ import {
   FlatList,
   StyleSheet,
   SafeAreaView,
+  ScrollView,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -93,8 +94,8 @@ export default function LogScreen() {
     [colors, logs.length]
   );
 
-  return (
-    <SafeAreaView style={s.container}>
+  const headerComponent = (
+    <>
       <View style={s.header}>
         <View style={s.headerLeft}>
           <Mascot size={80} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
@@ -143,24 +144,33 @@ export default function LogScreen() {
           )}
         </View>
       )}
+    </>
+  );
 
+  return (
+    <SafeAreaView style={s.container}>
       {loading ? (
         <View style={s.loading}>
           <Text style={s.loadingText}>Loading your logs...</Text>
         </View>
       ) : logs.length === 0 ? (
-        <View style={s.empty}>
-          <Mascot size={110} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
-          <Text style={s.emptyText}>No drinks logged yet today</Text>
-          <Text style={s.emptyHint}>
-            Go to Home and tap "I drank water"
-          </Text>
-        </View>
+        <ScrollView contentContainerStyle={s.list}>
+          {headerComponent}
+          <View style={s.empty}>
+            <Mascot size={110} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
+            <Text style={s.emptyText}>No drinks logged yet today</Text>
+            <Text style={s.emptyHint}>
+              Go to Home and tap "I drank water"
+            </Text>
+          </View>
+        </ScrollView>
       ) : (
         <FlatList
           data={logs}
           keyExtractor={(item) => item.id}
           contentContainerStyle={s.list}
+          style={{ flex: 1 }}
+          ListHeaderComponent={headerComponent}
           renderItem={renderLogItem}
           getItemLayout={(_data, index) => ({
             length: ITEM_HEIGHT,
@@ -169,7 +179,6 @@ export default function LogScreen() {
           })}
           windowSize={7}
           maxToRenderPerBatch={15}
-          removeClippedSubviews={true}
         />
       )}
     </SafeAreaView>
@@ -270,20 +279,18 @@ function makeStyles(colors) {
       flex: 1,
     },
     loading: {
-      flex: 1,
       alignItems: "center",
-      justifyContent: "center",
-      paddingBottom: 60,
+      paddingTop: 40,
+      paddingBottom: 40,
     },
     loadingText: {
       fontSize: 15,
       color: colors.textSecondary,
     },
     empty: {
-      flex: 1,
       alignItems: "center",
-      justifyContent: "center",
-      paddingBottom: 60,
+      paddingTop: 40,
+      paddingBottom: 40,
     },
     emptyText: {
       fontSize: 17,

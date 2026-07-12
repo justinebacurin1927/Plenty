@@ -227,14 +227,22 @@ colors.js (light + dark tokens)
       → makeStyles(colors) factory returns StyleSheet
 ```
 
-## Development Build (APK)
+## Standalone APK
+
+No laptop needed. Download the latest build and install it directly on your Android phone:
+
+**👉 [Download Plenty APK](https://expo.dev/accounts/justine7417/projects/Plenty/builds/b72bc8e4-c9c9-4a42-8c40-214f51a4a249)**
+
+The app runs fully standalone — reminders, widget, dark mode, logging, all work offline.
+
+## Development Build (from source)
 
 ```bash
 cd ~/Projects/Plenty
-npx eas build --platform android --profile development
+npx eas build --platform android --profile preview
 ```
 
-The widget and Health Connect require native modules — they won't work in Expo Go. Build via EAS, download the APK, and install it. Supports side-loading on any Android device.
+Widget and Health Connect require native modules — they won't work in Expo Go. Build via EAS, download the APK, and side-load on any Android device.
 
 ## Design Decisions
 

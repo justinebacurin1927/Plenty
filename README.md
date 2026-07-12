@@ -51,9 +51,17 @@ Scan the QR code with **Expo Go** (Android) or the **Camera** app (iOS).
 
 > **Note:** Push notifications don't work in Expo Go on Android SDK 53+. See [development builds](#development-build) for full notification support.
 
+## Standalone APK
+
+No laptop needed — download and install the latest release:
+
+**👉 [Download Plenty APK](https://expo.dev/accounts/justine7417/projects/Plenty/builds/b72bc8e4-c9c9-4a42-8c40-214f51a4a249)**
+
+Open the link on your Android phone, download the APK, and install it. The app runs fully standalone — reminders, widget, dark mode, everything works offline.
+
 ## Development Build
 
-For **real notifications** (sound + vibration on Android) you need a development build APK:
+For building from source:
 
 ```bash
 npm install -g eas-cli

@@ -27,11 +27,6 @@ import {
 } from "../utils/notifications";
 import { useTheme } from "../context/ThemeContext";
 import { refreshWidget } from "../utils/widget";
-import {
-  isHealthConnectAvailable,
-  getSyncPreference,
-  writeHydrationRecord,
-} from "../utils/health";
 import { ShareCardForwardRef } from "../components/ShareCard";
 import { captureAndShare } from "../utils/share";
 
@@ -254,19 +249,9 @@ export default function HomeScreen({ navigation }) {
         glassesCount: Math.round((todayMl + amount) / 250),
       }).catch(() => {});
 
-      // Sync to Health Connect (best-effort, checks pref internally)
-      _syncToHealth(amount).catch(() => {});
     },
     [todayMl, dailyGoal]
   );
-
-  const _syncToHealth = async (amount) => {
-    const syncEnabled = await getSyncPreference();
-    if (!syncEnabled) return;
-    const available = await isHealthConnectAvailable();
-    if (!available) return;
-    await writeHydrationRecord(amount, new Date().toISOString());
-  };
 
   useEffect(() => {
     (async () => {
@@ -596,15 +581,19 @@ function makeStyles(colors) {
     peakHint: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 4,
-      marginTop: 6,
-      paddingVertical: 4,
-      paddingHorizontal: 12,
+      gap: 6,
+      marginTop: 10,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      backgroundColor: colors.primaryBg,
+      borderRadius: 10,
+      width: "100%",
     },
     peakHintText: {
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: "600",
       color: colors.primary,
+      flex: 1,
     },
     escalationBanner: {
       flexDirection: "row",

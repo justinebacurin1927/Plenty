@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
-  Platform,
 } from "react-native";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
@@ -31,13 +30,6 @@ import { clearWeatherCache } from "../utils/weather";
 import { getLullPeriods, getPeakHours } from "../utils/patterns";
 import { MASCOT_VARIANTS } from "../components/Mascot";
 import { useTheme } from "../context/ThemeContext";
-import {
-  isHealthConnectAvailable,
-  getSyncPreference,
-  saveSyncPreference,
-  requestHydrationPermissions,
-  getLastSyncTime,
-} from "../utils/health";
 
 const MESSAGE_CATEGORIES = [
   { key: "encouraging", icon: "megaphone", label: "Encouraging", hint: "Motivational messages" },
@@ -66,9 +58,8 @@ export default function SettingsScreen() {
   const [patternLulls, setPatternLulls] = useState([]);
   const [patternPeaks, setPatternPeaks] = useState([]);
   const [exporting, setExporting] = useState(null);
-  const [healthAvailable, setHealthAvailable] = useState(false);
-  const [healthEnabled, setHealthEnabled] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [exportExpanded, setExportExpanded] = useState(false);
+  const [messagesExpanded, setMessagesExpanded] = useState(false);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
 
   const cycleExpression = () => {
@@ -101,16 +92,6 @@ export default function SettingsScreen() {
       setPatternLulls(getLullPeriods(logs));
       setPatternPeaks(getPeakHours(logs));
     } catch (e) {}
-
-    // Check Health Connect availability
-    const avail = await isHealthConnectAvailable();
-    setHealthAvailable(avail);
-    if (avail) {
-      const pref = await getSyncPreference();
-      setHealthEnabled(pref);
-      const last = await getLastSyncTime();
-      setLastSyncTime(last);
-    }
   };
 
   const update = async (key, value) => {
@@ -120,23 +101,6 @@ export default function SettingsScreen() {
     } catch (e) {
       console.error("Failed to save settings:", e.message, e.stack);
     }
-  };
-
-  const handleHealthToggle = async (enabled) => {
-    if (enabled) {
-      const granted = await requestHydrationPermissions();
-      if (!granted) {
-        Alert.alert(
-          "Permissions Required",
-          "Health Connect needs permission to read and write hydration data. Open the Health Connect app to grant permissions.",
-          [{ text: "OK" }]
-        );
-        return;
-      }
-    }
-    await saveSyncPreference(enabled);
-    setHealthEnabled(enabled);
-    if (!enabled) setLastSyncTime(null);
   };
 
   const handleResetData = () => {
@@ -371,49 +335,6 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* ── Health Connect Sync ── */}
-        {(healthAvailable || Platform.OS === "android") && (
-          <>
-            <View style={s.sectionHeader}>
-              <Ionicons name="heart" size={18} color={colors.primary} />
-              <Text style={s.sectionHeaderText}>Health Connect Sync</Text>
-            </View>
-            <View style={s.row}>
-              <View style={s.rowLeft}>
-                <Ionicons name="sync" size={22} color={colors.primary} />
-                <View>
-                  <Text style={s.rowLabel}>Sync to Health Connect</Text>
-                  <Text style={s.rowHint}>
-                    {healthAvailable
-                      ? "Log water intake to Google Health Connect"
-                      : "Health Connect not installed on this device"}
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={healthEnabled}
-                onValueChange={handleHealthToggle}
-                disabled={!healthAvailable}
-                trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
-                thumbColor={healthEnabled ? colors.switchThumbOn : colors.switchThumbOff}
-              />
-            </View>
-            {healthEnabled && lastSyncTime && (
-              <View style={s.row}>
-                <View style={s.rowLeft}>
-                  <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-                  <View>
-                    <Text style={s.rowLabel}>Last Sync</Text>
-                    <Text style={s.rowHint}>
-                      {new Date(lastSyncTime).toLocaleString()}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
-          </>
-        )}
-
         {/* ── Pattern Insights ── */}
         {patternPeaks.length > 0 && (
           <View style={s.sectionHeader}>
@@ -472,109 +393,134 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Data Export & Backup ── */}
-        <View style={s.sectionHeader}>
+        {/* ── Data Export & Backup (dropdown accordion) ── */}
+        <TouchableOpacity
+          style={s.sectionHeaderDropdown}
+          onPress={() => setExportExpanded((v) => !v)}
+          activeOpacity={0.7}
+        >
           <Ionicons name="download" size={18} color={colors.primary} />
           <Text style={s.sectionHeaderText}>Data Export & Backup</Text>
-        </View>
-        <TouchableOpacity
-          style={s.row}
-          onPress={async () => {
-            setExporting("csv");
-            try {
-              await exportToCSV();
-            } catch (e) {
-              Alert.alert("Export Failed", e.message);
-            } finally {
-              setExporting(null);
-            }
-          }}
-          disabled={exporting !== null}
-        >
-          <View style={s.rowLeft}>
-            <Ionicons name="grid-outline" size={22} color={colors.primary} />
-            <View>
-              <Text style={s.rowLabel}>
-                {exporting === "csv" ? "Exporting..." : "Export CSV"}
-              </Text>
-              <Text style={s.rowHint}>Share logs as spreadsheet file</Text>
-            </View>
-          </View>
-          <Ionicons name="share-outline" size={20} color={colors.textMuted} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={s.row}
-          onPress={async () => {
-            setExporting("json");
-            try {
-              await exportToJSON();
-            } catch (e) {
-              Alert.alert("Backup Failed", e.message);
-            } finally {
-              setExporting(null);
-            }
-          }}
-          disabled={exporting !== null}
-        >
-          <View style={s.rowLeft}>
-            <Ionicons name="archive-outline" size={22} color={colors.primary} />
-            <View>
-              <Text style={s.rowLabel}>
-                {exporting === "json" ? "Exporting..." : "Export JSON Backup"}
-              </Text>
-              <Text style={s.rowHint}>Full backup with settings & achievements</Text>
-            </View>
-          </View>
-          <Ionicons name="share-outline" size={20} color={colors.textMuted} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={s.row}
-          onPress={async () => {
-            try {
-              setExporting("importing");
-              const result = await DocumentPicker.getDocumentAsync({
-                type: "application/json",
-                copyToCacheDirectory: true,
-              });
-              if (result.canceled) return;
-              const file = result.assets?.[0];
-              if (!file) return;
-              const response = await fetch(file.uri);
-              const jsonString = await response.text();
-              const summary = await importFromJSON(jsonString);
-              Alert.alert(
-                "Restored!",
-                `Imported ${summary.logs} log entries.\n${summary.hasSettings ? "Settings restored\n" : ""}${summary.hasAchievements ? "Achievements restored" : ""}`,
-                [{ text: "Great!" }]
-              );
-              await loadSettings();
-            } catch (e) {
-              Alert.alert("Import Failed", e.message || "Could not read backup file");
-            } finally {
-              setExporting(null);
-            }
-          }}
-          disabled={exporting !== null}
-        >
-          <View style={s.rowLeft}>
-            <Ionicons name="cloud-upload-outline" size={22} color={colors.primary} />
-            <View>
-              <Text style={s.rowLabel}>
-                {exporting === "importing" ? "Importing..." : "Import JSON Backup"}
-              </Text>
-              <Text style={s.rowHint}>Restore from a previous backup</Text>
-            </View>
-          </View>
-          <Ionicons name="enter-outline" size={20} color={colors.textMuted} />
+          <Ionicons
+            name={exportExpanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={colors.textMuted}
+            style={{ marginLeft: "auto" }}
+          />
         </TouchableOpacity>
 
-        {/* ── Notification Messages ── */}
-        <View style={s.sectionHeader}>
+        {exportExpanded && (
+          <>
+            <TouchableOpacity
+              style={s.row}
+              onPress={async () => {
+                setExporting("csv");
+                try {
+                  await exportToCSV();
+                } catch (e) {
+                  Alert.alert("Export Failed", e.message);
+                } finally {
+                  setExporting(null);
+                }
+              }}
+              disabled={exporting !== null}
+            >
+              <View style={s.rowLeft}>
+                <Ionicons name="grid-outline" size={22} color={colors.primary} />
+                <View>
+                  <Text style={s.rowLabel}>
+                    {exporting === "csv" ? "Exporting..." : "Export CSV"}
+                  </Text>
+                  <Text style={s.rowHint}>Share logs as spreadsheet file</Text>
+                </View>
+              </View>
+              <Ionicons name="share-outline" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.row}
+              onPress={async () => {
+                setExporting("json");
+                try {
+                  await exportToJSON();
+                } catch (e) {
+                  Alert.alert("Backup Failed", e.message);
+                } finally {
+                  setExporting(null);
+                }
+              }}
+              disabled={exporting !== null}
+            >
+              <View style={s.rowLeft}>
+                <Ionicons name="archive-outline" size={22} color={colors.primary} />
+                <View>
+                  <Text style={s.rowLabel}>
+                    {exporting === "json" ? "Exporting..." : "Export JSON Backup"}
+                  </Text>
+                  <Text style={s.rowHint}>Full backup with settings & achievements</Text>
+                </View>
+              </View>
+              <Ionicons name="share-outline" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.row}
+              onPress={async () => {
+                try {
+                  setExporting("importing");
+                  const result = await DocumentPicker.getDocumentAsync({
+                    type: "application/json",
+                    copyToCacheDirectory: true,
+                  });
+                  if (result.canceled) return;
+                  const file = result.assets?.[0];
+                  if (!file) return;
+                  const response = await fetch(file.uri);
+                  const jsonString = await response.text();
+                  const summary = await importFromJSON(jsonString);
+                  Alert.alert(
+                    "Restored!",
+                    `Imported ${summary.logs} log entries.\n${summary.hasSettings ? "Settings restored\n" : ""}${summary.hasAchievements ? "Achievements restored" : ""}`,
+                    [{ text: "Great!" }]
+                  );
+                  await loadSettings();
+                } catch (e) {
+                  Alert.alert("Import Failed", e.message || "Could not read backup file");
+                } finally {
+                  setExporting(null);
+                }
+              }}
+              disabled={exporting !== null}
+            >
+              <View style={s.rowLeft}>
+                <Ionicons name="cloud-upload-outline" size={22} color={colors.primary} />
+                <View>
+                  <Text style={s.rowLabel}>
+                    {exporting === "importing" ? "Importing..." : "Import JSON Backup"}
+                  </Text>
+                  <Text style={s.rowHint}>Restore from a previous backup</Text>
+                </View>
+              </View>
+              <Ionicons name="enter-outline" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* ── Notification Messages (dropdown accordion) ── */}
+        <TouchableOpacity
+          style={s.sectionHeaderDropdown}
+          onPress={() => setMessagesExpanded((v) => !v)}
+          activeOpacity={0.7}
+        >
           <Ionicons name="chatbubbles" size={18} color={colors.primary} />
           <Text style={s.sectionHeaderText}>Notification Messages</Text>
-        </View>
+          <Ionicons
+            name={messagesExpanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={colors.textMuted}
+            style={{ marginLeft: "auto" }}
+          />
+        </TouchableOpacity>
 
-        {MESSAGE_CATEGORIES.map((cat) => (
+        {messagesExpanded && MESSAGE_CATEGORIES.map((cat) => (
           <View key={cat.key} style={s.row}>
             <View style={s.rowLeft}>
               <Ionicons name={cat.icon} size={22} color={colors.primary} />
@@ -768,6 +714,15 @@ function makeStyles(colors) {
       color: colors.textSection,
       letterSpacing: 0.3,
       textTransform: "uppercase",
+    },
+    sectionHeaderDropdown: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginHorizontal: 24,
+      marginTop: 24,
+      marginBottom: 4,
+      paddingVertical: 8,
     },
     catIcon: {
       fontSize: 22,
