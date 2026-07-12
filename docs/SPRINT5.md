@@ -28,7 +28,7 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 | **A6** | Theme persistence | Save theme preference in AsyncStorage | ✅ |
 | **A7** | All screens themed | Home, Log, Settings, Achievements — all switch cleanly | ✅ |
 | **A8** | Navigation bar | Bottom tab bar adapts to dark theme | ✅ |
-| **A9** | Splash screen | Dark-compatible splash/loading state | ❌ |
+| **A9** | Splash screen | Dark-compatible splash/loading state | ✅ |
 
 ### Design Notes
 - **Dark palette suggestion:** Background `#0D1B2A`, Surface `#1B2838`, Primary `#6BB5FF` (lighter blue for contrast), Text `#E0EAFF`
@@ -126,15 +126,15 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 
 | # | Task | Detail | Status |
 |---|------|--------|--------|
-| **E1** | FlatList optimization | Ensure Log screen uses proper `keyExtractor`, `getItemLayout`, remove anonymous renders | ❌ |
-| **E2** | Debounce quick-log | Prevent double-tap logging the same drink twice in <500ms | ❌ |
-| **E3** | Reduce re-renders | Memoize callbacks in HomeScreen, use `useMemo` for derived values | ❌ |
-| **E4** | App icon & splash | Finalize app icon (already have one), add branded splash screen | ❌ |
-| **E5** | Adaptive icon (Android) | Generate adaptive icon foreground + background layers for Android 13+ | ❌ |
-| **E6** | Accessibility labels | Add `accessibilityLabel` to all interactive elements | ❌ |
-| **E7** | Loading states | Show simple loading indicators on screens while AsyncStorage reads complete | ❌ |
-| **E8** | Error handling audit | Review all `try/catch` blocks — are error messages user-friendly or just console logs? | ❌ |
-| **E9** | App version in Settings | Show current version + build number (link to this sprint's release) | ❌ |
+| **E1** | FlatList optimization | Ensure Log screen uses proper `keyExtractor`, `getItemLayout`, remove anonymous renders | ✅ |
+| **E2** | Debounce quick-log | Prevent double-tap logging the same drink twice in <500ms | ✅ |
+| **E3** | Reduce re-renders | Memoize callbacks in HomeScreen, use `useMemo` for derived values | ✅ |
+| **E4** | App icon & splash | Finalize app icon (already have one), add branded splash screen | ✅ |
+| **E5** | Adaptive icon (Android) | Generate adaptive icon foreground + background layers for Android 13+ | ✅ |
+| **E6** | Accessibility labels | Add `accessibilityLabel` to all interactive elements | ✅ |
+| **E7** | Loading states | Show simple loading indicators on screens while AsyncStorage reads complete | ✅ |
+| **E8** | Error handling audit | Review all `try/catch` blocks — are error messages user-friendly or just console logs? | ✅ |
+| **E9** | App version in Settings | Show current version + build number (link to this sprint's release) | ✅ |
 
 ---
 

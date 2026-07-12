@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ export default function LogScreen() {
 
   const [logs, setLogs] = useState([]);
   const [weekly, setWeekly] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [mascotVariant, setMascotVariant] = useState("classic");
   const [mascotExpression, setMascotExpression] = useState("happy");
   const [lowDayPattern, setLowDayPattern] = useState(null);
@@ -61,6 +62,7 @@ export default function LogScreen() {
         } catch (e) {
           console.error("Failed to load log data:", e.message, e.stack);
         }
+        setLoading(false);
       })();
     }, [])
   );
@@ -70,7 +72,26 @@ export default function LogScreen() {
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const maxTotal = Math.max(...weekly.map((d) => d.total), 1);
+  const maxTotal = useMemo(
+    () => Math.max(...weekly.map((d) => d.total), 1),
+    [weekly]
+  );
+
+  const ITEM_HEIGHT = 58;
+
+  const renderLogItem = useCallback(
+    ({ item, index }) => (
+      <View style={s.logItem}>
+        <View style={s.logLeft}>
+          <Text style={s.logIndex}>#{logs.length - index}</Text>
+          <Ionicons name="water" size={20} color={colors.primary} />
+          <Text style={s.logAmount}>{item.amount || 250} ml</Text>
+        </View>
+        <Text style={s.logTime}>{formatTime(item.timestamp)}</Text>
+      </View>
+    ),
+    [colors, logs.length]
+  );
 
   return (
     <SafeAreaView style={s.container}>
@@ -123,7 +144,11 @@ export default function LogScreen() {
         </View>
       )}
 
-      {logs.length === 0 ? (
+      {loading ? (
+        <View style={s.loading}>
+          <Text style={s.loadingText}>Loading your logs...</Text>
+        </View>
+      ) : logs.length === 0 ? (
         <View style={s.empty}>
           <Mascot size={110} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
           <Text style={s.emptyText}>No drinks logged yet today</Text>
@@ -136,16 +161,15 @@ export default function LogScreen() {
           data={logs}
           keyExtractor={(item) => item.id}
           contentContainerStyle={s.list}
-          renderItem={({ item, index }) => (
-            <View style={s.logItem}>
-              <View style={s.logLeft}>
-                <Text style={s.logIndex}>#{logs.length - index}</Text>
-                <Ionicons name="water" size={20} color={colors.primary} />
-                <Text style={s.logAmount}>{item.amount || 250} ml</Text>
-              </View>
-              <Text style={s.logTime}>{formatTime(item.timestamp)}</Text>
-            </View>
-          )}
+          renderItem={renderLogItem}
+          getItemLayout={(_data, index) => ({
+            length: ITEM_HEIGHT,
+            offset: ITEM_HEIGHT * index,
+            index,
+          })}
+          windowSize={7}
+          maxToRenderPerBatch={15}
+          removeClippedSubviews={true}
         />
       )}
     </SafeAreaView>
@@ -244,6 +268,16 @@ function makeStyles(colors) {
       fontWeight: "600",
       color: colors.textSecondary,
       flex: 1,
+    },
+    loading: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingBottom: 60,
+    },
+    loadingText: {
+      fontSize: 15,
+      color: colors.textSecondary,
     },
     empty: {
       flex: 1,

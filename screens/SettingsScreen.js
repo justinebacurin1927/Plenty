@@ -11,6 +11,7 @@ import {
   TextInput,
   Platform,
 } from "react-native";
+import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import Mascot, { getRandomMessage } from "../components/Mascot";
@@ -204,6 +205,8 @@ export default function SettingsScreen() {
                 key={opt.key}
                 style={[s.themeChip, themeMode === opt.key && s.themeChipActive]}
                 onPress={() => setThemeMode(opt.key)}
+                accessibilityLabel={`${opt.label} theme`}
+                accessibilityRole="button"
               >
                 <Ionicons
                   name={opt.icon}
@@ -229,6 +232,7 @@ export default function SettingsScreen() {
             onValueChange={(v) => update("sound", v)}
             trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
             thumbColor={settings.sound ? colors.switchThumbOn : colors.switchThumbOff}
+            accessibilityLabel={`Sound ${settings.sound ? "on" : "off"}`}
           />
         </View>
 
@@ -250,6 +254,7 @@ export default function SettingsScreen() {
             onValueChange={(v) => update("quietHoursEnabled", v)}
             trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
             thumbColor={settings.quietHoursEnabled ? colors.switchThumbOn : colors.switchThumbOff}
+            accessibilityLabel={`Quiet hours ${settings.quietHoursEnabled ? "on" : "off"}`}
           />
         </View>
 
@@ -362,6 +367,7 @@ export default function SettingsScreen() {
             onValueChange={(v) => update("activityAdjustment", v)}
             trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
             thumbColor={settings.activityAdjustment ? colors.switchThumbOn : colors.switchThumbOff}
+            accessibilityLabel={`Activity adjustment ${settings.activityAdjustment ? "on" : "off"}`}
           />
         </View>
 
@@ -640,7 +646,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         <View style={s.footer}>
-          <Text style={s.footerText}>Plenty v1.0.0</Text>
+          <Text style={s.footerText}>Plenty v{Constants.expoConfig?.version || "1.0.0"}</Text>
           <Text style={s.footerText}>Built with React Native + Expo</Text>
         </View>
       </ScrollView>

@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
+  Alert,
   Modal,
   StyleSheet,
   SafeAreaView,
@@ -85,6 +86,7 @@ export default function HomeScreen({ navigation }) {
   const [activityEnabled, setActivityEnabled] = useState(false);
   const streakCardRef = React.useRef(null);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
+  const lastLogRef = React.useRef(0);
 
   // Load everything on mount
   useEffect(() => {
@@ -204,6 +206,7 @@ export default function HomeScreen({ navigation }) {
       console.log("✅ Reminders are now active");
     } catch (e) {
       console.error("❌ Failed to start reminders:", e.message, e.stack);
+      Alert.alert("Could Not Start Reminders", e.message || "An error occurred");
     }
   };
 
@@ -220,6 +223,10 @@ export default function HomeScreen({ navigation }) {
 
   const logDrink = useCallback(
     async (amount) => {
+      const now = Date.now();
+      if (now - lastLogRef.current < 500) return; // debounce
+      lastLogRef.current = now;
+
       await addLog({ amount });
       Vibration.vibrate(50);
       setTodayCount((c) => c + 1);
@@ -287,9 +294,15 @@ export default function HomeScreen({ navigation }) {
     window._mascotTimer = setTimeout(() => setMascotMessage(null), 2500);
   }, []);
 
-  const goalMl = dailyGoal * 250;
-  const progressPct = Math.min(todayMl / goalMl, 1);
-  const glassesFromMl = Math.round(todayMl / 250);
+  const goalMl = React.useMemo(() => dailyGoal * 250, [dailyGoal]);
+  const progressPct = React.useMemo(
+    () => Math.min(todayMl / goalMl, 1),
+    [todayMl, goalMl]
+  );
+  const glassesFromMl = React.useMemo(
+    () => Math.round(todayMl / 250),
+    [todayMl]
+  );
 
   return (
     <SafeAreaView style={s.container}>
@@ -444,6 +457,8 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity
           style={[s.mainButton, isActive ? s.stopButton : s.startButton]}
           onPress={isActive ? stopReminder : startReminder}
+          accessibilityLabel={isActive ? "Stop reminders" : "Start reminders"}
+          accessibilityRole="button"
         >
           <Ionicons
             name={isActive ? "pause-circle" : "notifications"}
@@ -460,6 +475,8 @@ export default function HomeScreen({ navigation }) {
           onPress={() => logDrink(drinkAmount)}
           onLongPress={() => setShowAmountPicker(true)}
           delayLongPress={300}
+          accessibilityLabel={`Log water drink, ${drinkAmount} milliliters`}
+          accessibilityRole="button"
         >
           <Ionicons name="add-circle" size={24} color={colors.primary} />
           <Text style={s.drinkButtonText}>I drank water ({drinkAmount}ml)</Text>
