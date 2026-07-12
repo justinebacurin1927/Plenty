@@ -1,19 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, Animated, StyleSheet, Dimensions } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-const CONFETTI_COLORS = ["#4A90D9", "#E67E22", "#27AE60", "#E8596E", "#F1C40F", "#9B59B6"];
-
-/**
- * Achievement popup with confetti animation.
- *
- * Props:
- *   achievements — array of Achievement objects (from checkAchievements)
- *   visible     — boolean
- *   onDismiss   — () => void — called when user dismisses or queue empties
- */
 export default function AchievementPopup({ achievements, visible, onDismiss }) {
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+
   const [queue, setQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -27,7 +21,6 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
     }))
   ).current;
 
-  // Sync achievements prop into internal queue
   useEffect(() => {
     if (achievements && achievements.length > 0) {
       setQueue(achievements);
@@ -37,7 +30,6 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
     }
   }, [achievements]);
 
-  // Animate in/out when visibility or index changes
   useEffect(() => {
     if (visible && queue.length > 0) {
       animateIn();
@@ -71,7 +63,6 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
       }),
     ]).start();
 
-    // Confetti burst
     confettiRefs.forEach((c, i) => {
       const angle = (i / confettiRefs.length) * Math.PI * 2;
       const dist = 60 + Math.random() * 80;
@@ -107,7 +98,6 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
       ]).start();
     });
 
-    // Auto-dismiss after 4 seconds
     setTimeout(() => {
       handleDismiss();
     }, 4000);
@@ -129,22 +119,21 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
 
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={handleDismiss}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={handleDismiss}>
+      <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={handleDismiss}>
         <Animated.View
           style={[
-            styles.card,
+            s.card,
             { transform: [{ scale: scaleAnim }], opacity: fadeAnim },
           ]}
         >
-          {/* Confetti dots */}
-          <View style={styles.confettiLayer} pointerEvents="none">
+          <View style={s.confettiLayer} pointerEvents="none">
             {confettiRefs.map((c, i) => (
               <Animated.View
                 key={i}
                 style={[
-                  styles.confettiDot,
+                  s.confettiDot,
                   {
-                    backgroundColor: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+                    backgroundColor: colors.confetti[i % colors.confetti.length],
                     transform: [
                       { translateY: c.translateY },
                       { translateX: c.translateX },
@@ -157,17 +146,13 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
             ))}
           </View>
 
-          {/* Trophy */}
-          <Text style={styles.trophy}>🏆</Text>
+          <Text style={s.trophy}>🏆</Text>
+          <Text style={s.emoji}>{achievement.emoji}</Text>
+          <Text style={s.title}>{achievement.title}</Text>
+          <Text style={s.description}>{achievement.description}</Text>
 
-          {/* Achievement emoji + title */}
-          <Text style={styles.emoji}>{achievement.emoji}</Text>
-          <Text style={styles.title}>{achievement.title}</Text>
-          <Text style={styles.description}>{achievement.description}</Text>
-
-          {/* Dismiss button */}
-          <TouchableOpacity style={styles.button} onPress={handleDismiss}>
-            <Text style={styles.buttonText}>
+          <TouchableOpacity style={s.button} onPress={handleDismiss}>
+            <Text style={s.buttonText}>
               {currentIndex < queue.length - 1 ? "Next →" : "Awesome!"}
             </Text>
           </TouchableOpacity>
@@ -177,73 +162,75 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 28,
-    paddingVertical: 36,
-    paddingHorizontal: 32,
-    alignItems: "center",
-    width: SCREEN_WIDTH * 0.8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  confettiLayer: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    width: 0,
-    height: 0,
-    zIndex: 0,
-  },
-  confettiDot: {
-    position: "absolute",
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginLeft: -5,
-    marginTop: -5,
-  },
-  trophy: {
-    fontSize: 40,
-    marginBottom: 8,
-  },
-  emoji: {
-    fontSize: 56,
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#1A3A5C",
-    textAlign: "center",
-  },
-  description: {
-    fontSize: 15,
-    color: "#6B8CAB",
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 22,
-  },
-  button: {
-    marginTop: 28,
-    backgroundColor: "#4A90D9",
-    paddingVertical: 12,
-    paddingHorizontal: 36,
-    borderRadius: 24,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: colors.overlayDark,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 28,
+      paddingVertical: 36,
+      paddingHorizontal: 32,
+      alignItems: "center",
+      width: SCREEN_WIDTH * 0.8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.25,
+      shadowRadius: 24,
+      elevation: 12,
+    },
+    confettiLayer: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      width: 0,
+      height: 0,
+      zIndex: 0,
+    },
+    confettiDot: {
+      position: "absolute",
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginLeft: -5,
+      marginTop: -5,
+    },
+    trophy: {
+      fontSize: 40,
+      marginBottom: 8,
+    },
+    emoji: {
+      fontSize: 56,
+      marginBottom: 12,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: "800",
+      color: colors.text,
+      textAlign: "center",
+    },
+    description: {
+      fontSize: 15,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginTop: 8,
+      lineHeight: 22,
+    },
+    button: {
+      marginTop: 28,
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 36,
+      borderRadius: 24,
+    },
+    buttonText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "700",
+    },
+  });
+}

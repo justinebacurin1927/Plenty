@@ -1,27 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
-const COLORS = {
-  drop: "#4A90D9",
-  dropLight: "#6BB3F0",
-  face: "#1A3A5C",
-  blush: "rgba(255, 130, 130, 0.3)",
-  highlight: "rgba(255, 255, 255, 0.35)",
-  gold: "#F1C40F",
-};
-
-/**
- * A friendly water-droplet mascot for Plenty.
- *
- * Props:
- *   size       – overall visible height (default 120)
- *   expression – "happy" | "excited" | "reminding" | "sleepy"
- *   variant    – "classic" | "cool" | "crown" | "super"
- *   celebration – boolean — triggers bounce animation
- *   onPress    – optional tap handler
- *   message    – optional speech bubble text
- *   style      – optional View style
- */
 export const BUBBLE_MESSAGES = [
   "💧 Drink up!",
   "Stay hydrated!",
@@ -45,12 +25,14 @@ export const BUBBLE_MESSAGES = [
   "Just keep swimming!",
 ];
 
-export const MASCOT_VARIANTS = [
+const MASCOT_VARIANTS = [
   { id: "classic", label: "Classic", description: "The original Plenty drop", achievementId: null },
   { id: "cool",    label: "Cool",    description: "Sunglasses vibe",        achievementId: "century" },
   { id: "crown",   label: "Royal",   description: "You're the hydration king", achievementId: "seven_day_streak" },
   { id: "super",   label: "Super",   description: "Sparkle and shine",     achievementId: "five_hundred" },
 ];
+
+export { MASCOT_VARIANTS };
 
 export function getRandomMessage() {
   return BUBBLE_MESSAGES[Math.floor(Math.random() * BUBBLE_MESSAGES.length)];
@@ -72,11 +54,19 @@ export default function Mascot({
   message = null,
   style,
 }) {
+  const { colors } = useTheme();
   const dropSide = size * 0.62;
   const f = dropSide / 100;
   const bounceAnim = useRef(new Animated.Value(0)).current;
 
-  // ── Celebration bounce animation (D2) ──
+  const COLORS = {
+    drop: variant === "super" ? "#9B59B6" : "#4A90D9",
+    face: "#1A3A5C",
+    blush: "rgba(255, 130, 130, 0.3)",
+    highlight: "rgba(255, 255, 255, 0.35)",
+    lensBorder: "#2C3E50",
+  };
+
   useEffect(() => {
     if (!celebration) {
       bounceAnim.setValue(0);
@@ -108,34 +98,31 @@ export default function Mascot({
         style,
       ]}
     >
-      {/* speech bubble */}
       {message && (
         <View style={[styles.bubbleOuter, { top: -(size * 0.35) }]}>
-          <View style={styles.bubble}>
-            <Text style={styles.bubbleText}>{message}</Text>
+          <View style={[styles.bubble, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.bubbleText, { color: colors.text }]}>{message}</Text>
           </View>
-          <View style={styles.bubbleArrow} />
+          <View style={[styles.bubbleArrow, { borderTopColor: colors.surface }]} />
         </View>
       )}
 
-      {/* rotated droplet */}
       <View
         style={[
           styles.drop,
           {
             width: dropSide,
             height: dropSide,
-            backgroundColor: variant === "super" ? "#9B59B6" : COLORS.drop,
+            backgroundColor: COLORS.drop,
             borderTopLeftRadius: dropSide * 0.05,
             borderTopRightRadius: dropSide * 0.5,
             borderBottomLeftRadius: dropSide * 0.5,
             borderBottomRightRadius: dropSide * 0.5,
+            shadowColor: COLORS.drop,
           },
         ]}
       >
-        {/* face – counter-rotated */}
         <View style={styles.face}>
-          {/* shimmer */}
           <View
             style={[
               styles.shimmer,
@@ -149,17 +136,14 @@ export default function Mascot({
             ]}
           />
 
-          {/* eyes */}
           <View style={styles.eyesRow}>
-            <Eye type={eyeType(expression, "left")} size={5.5 * f} />
+            <Eye type={eyeType(expression, "left")} size={5.5 * f} faceColor={COLORS.face} />
             <View style={{ width: 10 * f }} />
-            <Eye type={eyeType(expression, "right")} size={5.5 * f} />
+            <Eye type={eyeType(expression, "right")} size={5.5 * f} faceColor={COLORS.face} />
           </View>
 
-          {/* mouth */}
-          <Mouth expression={expression} size={12 * f} />
+          <Mouth expression={expression} size={12 * f} faceColor={COLORS.face} />
 
-          {/* blush */}
           <View style={styles.blushRow}>
             <View style={[styles.blush, { width: 7 * f, height: 4 * f, borderRadius: 3.5 * f }]} />
             <View style={[styles.blush, { width: 7 * f, height: 4 * f, borderRadius: 3.5 * f }]} />
@@ -167,7 +151,6 @@ export default function Mascot({
         </View>
       </View>
 
-      {/* ── Accessories (D3) ── */}
       <Accessory variant={variant} size={dropSide} />
     </Animated.View>
   );
@@ -178,18 +161,17 @@ export default function Mascot({
   return content;
 }
 
-/* ─── Accessory overlay (D3) ───────────── */
-
 function Accessory({ variant, size }) {
-  const s = size / 100; // scale factor
+  const { colors } = useTheme();
+  const s = size / 100;
 
   if (variant === "cool") {
     return (
       <View style={[styles.accessory, { top: size * 0.23 }]}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 2 * s }}>
-          <View style={[styles.lens, { width: 12 * s, height: 8 * s, borderRadius: 3 * s }]} />
+          <View style={[styles.lens, { width: 12 * s, height: 8 * s, borderRadius: 3 * s, backgroundColor: "#1A3A5C", borderColor: "#2C3E50" }]} />
           <View style={{ width: 6 * s, height: 2 * s, backgroundColor: "#1A3A5C" }} />
-          <View style={[styles.lens, { width: 12 * s, height: 8 * s, borderRadius: 3 * s }]} />
+          <View style={[styles.lens, { width: 12 * s, height: 8 * s, borderRadius: 3 * s, backgroundColor: "#1A3A5C", borderColor: "#2C3E50" }]} />
         </View>
       </View>
     );
@@ -219,39 +201,33 @@ function Accessory({ variant, size }) {
   return null;
 }
 
-/* ─── Eye sub-component ─────────────────── */
-
-function Eye({ type, size }) {
+function Eye({ type, size, faceColor }) {
   const half = size / 2;
   if (type === "circle") {
-    return <View style={{ width: size, height: size, borderRadius: half, backgroundColor: COLORS.face }} />;
+    return <View style={{ width: size, height: size, borderRadius: half, backgroundColor: faceColor }} />;
   }
   if (type === "big") {
-    return <View style={{ width: size * 1.3, height: size * 1.3, borderRadius: (size * 1.3) / 2, backgroundColor: COLORS.face }} />;
+    return <View style={{ width: size * 1.3, height: size * 1.3, borderRadius: (size * 1.3) / 2, backgroundColor: faceColor }} />;
   }
-  return <View style={{ width: size * 1.5, height: 2.2, borderRadius: 1.5, backgroundColor: COLORS.face }} />;
+  return <View style={{ width: size * 1.5, height: 2.2, borderRadius: 1.5, backgroundColor: faceColor }} />;
 }
 
-/* ─── Mouth sub-component ───────────────── */
-
-function Mouth({ expression, size }) {
+function Mouth({ expression, size, faceColor }) {
   const w = size * 0.7;
   if (expression === "happy" || expression === "reminding") {
     return (
-      <View style={{ marginTop: 4, width: w, height: w * 0.35, borderBottomLeftRadius: w * 0.4, borderBottomRightRadius: w * 0.4, borderBottomWidth: 2.5, borderBottomColor: COLORS.face }} />
+      <View style={{ marginTop: 4, width: w, height: w * 0.35, borderBottomLeftRadius: w * 0.4, borderBottomRightRadius: w * 0.4, borderBottomWidth: 2.5, borderBottomColor: faceColor }} />
     );
   }
   if (expression === "excited") {
     return (
-      <View style={{ marginTop: 4, width: w * 0.5, height: w * 0.5, borderRadius: w * 0.25, backgroundColor: COLORS.face }} />
+      <View style={{ marginTop: 4, width: w * 0.5, height: w * 0.5, borderRadius: w * 0.25, backgroundColor: faceColor }} />
     );
   }
   return (
-    <View style={{ marginTop: 4, width: w * 0.5, height: w * 0.2, borderBottomLeftRadius: w * 0.1, borderBottomRightRadius: w * 0.1, borderBottomWidth: 2, borderBottomColor: COLORS.face }} />
+    <View style={{ marginTop: 4, width: w * 0.5, height: w * 0.2, borderBottomLeftRadius: w * 0.1, borderBottomRightRadius: w * 0.1, borderBottomWidth: 2, borderBottomColor: faceColor }} />
   );
 }
-
-/* ─── Expression helpers ────────────────── */
 
 function eyeType(expression, side) {
   const MAP = {
@@ -263,15 +239,12 @@ function eyeType(expression, side) {
   return (MAP[expression] || MAP.happy)[side];
 }
 
-/* ─── Styles ────────────────────────────── */
-
 const styles = StyleSheet.create({
   wrapper: { alignItems: "center", justifyContent: "center" },
   drop: {
     alignItems: "center",
     justifyContent: "center",
     transform: [{ rotate: "45deg" }],
-    shadowColor: COLORS.drop,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -283,7 +256,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: "12%",
   },
-  shimmer: { position: "absolute", backgroundColor: COLORS.highlight },
+  shimmer: { position: "absolute", backgroundColor: "rgba(255, 255, 255, 0.35)" },
   eyesRow: { flexDirection: "row", alignItems: "center", marginTop: "-8%" },
   blushRow: {
     position: "absolute",
@@ -292,12 +265,11 @@ const styles = StyleSheet.create({
     width: "130%",
     top: "55%",
   },
-  blush: { backgroundColor: COLORS.blush },
+  blush: { backgroundColor: "rgba(255, 130, 130, 0.3)" },
   accessory: { position: "absolute", zIndex: 5 },
-  lens: { backgroundColor: "#1A3A5C", borderWidth: 1, borderColor: "#2C3E50" },
+  lens: { borderWidth: 1 },
   bubbleOuter: { position: "absolute", left: 0, right: 0, alignItems: "center", zIndex: 10 },
   bubble: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -308,11 +280,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6,
   },
-  bubbleText: { fontSize: 13, color: "#1A3A5C", fontWeight: "600", textAlign: "center" },
+  bubbleText: { fontSize: 13, fontWeight: "600", textAlign: "center" },
   bubbleArrow: {
     width: 0, height: 0,
     borderLeftWidth: 8, borderRightWidth: 8, borderTopWidth: 8,
-    borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: "#fff",
+    borderLeftColor: "transparent", borderRightColor: "transparent",
     marginTop: -1,
   },
 });

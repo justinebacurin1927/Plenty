@@ -246,3 +246,14 @@ export function lbsToKg(lbs) {
 export function activityBoostedGoal(baseGoal, exercised) {
   return exercised ? baseGoal + Math.round(750 / 250) : baseGoal; // +750ml ≈ +3 glasses
 }
+
+// ─── Theme Preference (Sprint 5) ─────────────────────────
+
+export async function getThemePreference() {
+  const raw = await AsyncStorage.getItem("@plenty_theme");
+  return raw || "auto";
+}
+
+export async function saveThemePreference(mode) {
+  await AsyncStorage.setItem("@plenty_theme", mode);
+}

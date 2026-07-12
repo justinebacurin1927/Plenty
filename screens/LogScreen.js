@@ -12,10 +12,14 @@ import Mascot, { getRandomMessage } from "../components/Mascot";
 import MonthlyReport from "../components/MonthlyReport";
 import { getTodayLogs, getDailyTotals, getSettings, getLogs } from "../utils/storage";
 import { getLowestHydrationDay } from "../utils/patterns";
+import { useTheme } from "../context/ThemeContext";
 
-const MAX_BAR = 200; // max visual height
+const MAX_BAR = 200;
 
 export default function LogScreen() {
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+
   const [logs, setLogs] = useState([]);
   const [weekly, setWeekly] = useState([]);
   const [mascotVariant, setMascotVariant] = useState("classic");
@@ -45,7 +49,6 @@ export default function LogScreen() {
           const settings = await getSettings();
           setMascotVariant(settings.mascotVariant || "classic");
 
-          // Day-of-week pattern (B5)
           try {
             const allLogs = await getLogs();
             const lowDay = getLowestHydrationDay(allLogs);
@@ -54,9 +57,7 @@ export default function LogScreen() {
             } else {
               setLowDayPattern(null);
             }
-          } catch (e) {
-            // ignore
-          }
+          } catch (e) {}
         } catch (e) {
           console.error("Failed to load log data:", e.message, e.stack);
         }
@@ -72,52 +73,49 @@ export default function LogScreen() {
   const maxTotal = Math.max(...weekly.map((d) => d.total), 1);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
+    <SafeAreaView style={s.container}>
+      <View style={s.header}>
+        <View style={s.headerLeft}>
           <Mascot size={80} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
           <View>
-            <Text style={styles.title}>Your Log</Text>
-            <Text style={styles.subtitle}>{logs.length} glasses today</Text>
+            <Text style={s.title}>Your Log</Text>
+            <Text style={s.subtitle}>{logs.length} glasses today</Text>
           </View>
         </View>
       </View>
 
-      {/* ── Monthly Report (A3) ── */}
       <MonthlyReport />
 
-      {/* ── Weekly Bar Chart ── */}
       {weekly.length > 0 && (
-        <View style={styles.weeklyCard}>
-          <Text style={styles.weeklyTitle}>Last 7 Days</Text>
-          <View style={styles.chartRow}>
+        <View style={s.weeklyCard}>
+          <Text style={s.weeklyTitle}>Last 7 Days</Text>
+          <View style={s.chartRow}>
             {weekly.map((day, i) => {
               const height = Math.max((day.total / maxTotal) * MAX_BAR, day.total > 0 ? 10 : 4);
               return (
-                <View key={i} style={styles.barCol}>
-                  <Text style={styles.barValue}>{Math.round(day.total / 250)}</Text>
-                  <View style={[styles.bar, { height }]}>
+                <View key={i} style={s.barCol}>
+                  <Text style={s.barValue}>{Math.round(day.total / 250)}</Text>
+                  <View style={[s.bar, { height }]}>
                     <View
                       style={[
-                        styles.barFill,
+                        s.barFill,
                         {
                           height: "100%",
-                          backgroundColor: i === 6 ? "#4A90D9" : "#A0C4E8",
+                          backgroundColor: i === 6 ? colors.barToday : colors.barDefault,
                         },
                       ]}
                     />
                   </View>
-                  <Text style={styles.barLabel}>{day.label}</Text>
+                  <Text style={s.barLabel}>{day.label}</Text>
                 </View>
               );
             })}
           </View>
 
-          {/* Day-of-week insight (B5) */}
           {lowDayPattern && (
-            <View style={styles.patternHint}>
-              <Ionicons name="analytics-outline" size={14} color="#6B8CAB" />
-              <Text style={styles.patternHintText}>
+            <View style={s.patternHint}>
+              <Ionicons name="analytics-outline" size={14} color={colors.textSecondary} />
+              <Text style={s.patternHintText}>
                 You drink least on {lowDayPattern.name}s (avg {lowDayPattern.avg}ml)
               </Text>
             </View>
@@ -125,12 +123,11 @@ export default function LogScreen() {
         </View>
       )}
 
-      {/* ── Today's List ── */}
       {logs.length === 0 ? (
-        <View style={styles.empty}>
+        <View style={s.empty}>
           <Mascot size={110} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
-          <Text style={styles.emptyText}>No drinks logged yet today</Text>
-          <Text style={styles.emptyHint}>
+          <Text style={s.emptyText}>No drinks logged yet today</Text>
+          <Text style={s.emptyHint}>
             Go to Home and tap "I drank water"
           </Text>
         </View>
@@ -138,15 +135,15 @@ export default function LogScreen() {
         <FlatList
           data={logs}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={s.list}
           renderItem={({ item, index }) => (
-            <View style={styles.logItem}>
-              <View style={styles.logLeft}>
-                <Text style={styles.logIndex}>#{logs.length - index}</Text>
-                <Ionicons name="water" size={20} color="#4A90D9" />
-                <Text style={styles.logAmount}>{item.amount || 250} ml</Text>
+            <View style={s.logItem}>
+              <View style={s.logLeft}>
+                <Text style={s.logIndex}>#{logs.length - index}</Text>
+                <Ionicons name="water" size={20} color={colors.primary} />
+                <Text style={s.logAmount}>{item.amount || 250} ml</Text>
               </View>
-              <Text style={styles.logTime}>{formatTime(item.timestamp)}</Text>
+              <Text style={s.logTime}>{formatTime(item.timestamp)}</Text>
             </View>
           )}
         />
@@ -155,158 +152,154 @@ export default function LogScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#E8F4FD",
-    paddingTop: 80,
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 0,
-    paddingBottom: 12,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1A3A5C",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#6B8CAB",
-    marginTop: 4,
-  },
-
-  // ── Weekly ──
-  weeklyCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    marginHorizontal: 24,
-    marginBottom: 12,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  weeklyTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1A3A5C",
-    marginBottom: 16,
-  },
-  chartRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    height: MAX_BAR + 30,
-  },
-  barCol: {
-    alignItems: "center",
-    flex: 1,
-  },
-  barValue: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#6B8CAB",
-    marginBottom: 4,
-  },
-  bar: {
-    width: 20,
-    borderRadius: 6,
-    backgroundColor: "#E8F0FE",
-    overflow: "hidden",
-    justifyContent: "flex-end",
-  },
-  barFill: {
-    width: "100%",
-    borderRadius: 6,
-  },
-  barLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#6B8CAB",
-    marginTop: 6,
-  },
-
-  // ── Pattern Hint ──
-  patternHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 14,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#E8F0FE",
-  },
-  patternHintText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6B8CAB",
-    flex: 1,
-  },
-
-  // ── Empty ──
-  empty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingBottom: 60,
-  },
-  emptyText: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#6B8CAB",
-    marginTop: 12,
-  },
-  emptyHint: {
-    fontSize: 14,
-    color: "#A0B8D0",
-    marginTop: 4,
-  },
-  list: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  logItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#fff",
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    marginTop: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  logLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  logIndex: {
-    fontSize: 13,
-    color: "#A0B8D0",
-    fontWeight: "500",
-    width: 28,
-  },
-  logAmount: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1A3A5C",
-  },
-  logTime: {
-    fontSize: 14,
-    color: "#6B8CAB",
-  },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+      paddingTop: 80,
+    },
+    header: {
+      paddingHorizontal: 24,
+      paddingTop: 0,
+      paddingBottom: 12,
+    },
+    headerLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    weeklyCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      marginHorizontal: 24,
+      marginBottom: 12,
+      padding: 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    weeklyTitle: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: colors.text,
+      marginBottom: 16,
+    },
+    chartRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      height: MAX_BAR + 30,
+    },
+    barCol: {
+      alignItems: "center",
+      flex: 1,
+    },
+    barValue: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    bar: {
+      width: 20,
+      borderRadius: 6,
+      backgroundColor: colors.primaryBg,
+      overflow: "hidden",
+      justifyContent: "flex-end",
+    },
+    barFill: {
+      width: "100%",
+      borderRadius: 6,
+    },
+    barLabel: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      marginTop: 6,
+    },
+    patternHint: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginTop: 14,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.borderLight,
+    },
+    patternHintText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      flex: 1,
+    },
+    empty: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingBottom: 60,
+    },
+    emptyText: {
+      fontSize: 17,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      marginTop: 12,
+    },
+    emptyHint: {
+      fontSize: 14,
+      color: colors.textTertiary,
+      marginTop: 4,
+    },
+    list: {
+      paddingHorizontal: 24,
+      paddingBottom: 24,
+    },
+    logItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: colors.surface,
+      paddingVertical: 14,
+      paddingHorizontal: 18,
+      borderRadius: 14,
+      marginTop: 10,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    logLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    logIndex: {
+      fontSize: 13,
+      color: colors.textTertiary,
+      fontWeight: "500",
+      width: 28,
+    },
+    logAmount: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.text,
+    },
+    logTime: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+  });
+}

@@ -20,14 +20,14 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 
 | # | Task | Detail | Status |
 |---|------|--------|--------|
-| **A1** | Color system refactor | Extract all hardcoded colors into a theme object with light + dark palettes | ❌ |
-| **A2** | Theme context | Create `ThemeContext` with system-follow detection and manual override | ❌ |
-| **A3** | Light theme | Document and lock the current palette as the canonical light theme | ❌ |
-| **A4** | Dark theme | Design a dark palette (dark navy base, cool tones, reduced contrast) | ❌ |
-| **A5** | Theme toggle in Settings | Auto (follow system) / Light / Dark picker | ❌ |
-| **A6** | Theme persistence | Save theme preference in AsyncStorage | ❌ |
-| **A7** | All screens themed | Home, Log, Settings, Achievements — all switch cleanly | ❌ |
-| **A8** | Navigation bar | Bottom tab bar adapts to dark theme | ❌ |
+| **A1** | Color system refactor | Extract all hardcoded colors into a theme object with light + dark palettes | ✅ |
+| **A2** | Theme context | Create `ThemeContext` with system-follow detection and manual override | ✅ |
+| **A3** | Light theme | Document and lock the current palette as the canonical light theme | ✅ |
+| **A4** | Dark theme | Design a dark palette (dark navy base, cool tones, reduced contrast) | ✅ |
+| **A5** | Theme toggle in Settings | Auto (follow system) / Light / Dark picker | ✅ |
+| **A6** | Theme persistence | Save theme preference in AsyncStorage | ✅ |
+| **A7** | All screens themed | Home, Log, Settings, Achievements — all switch cleanly | ✅ |
+| **A8** | Navigation bar | Bottom tab bar adapts to dark theme | ✅ |
 | **A9** | Splash screen | Dark-compatible splash/loading state | ❌ |
 
 ### Design Notes
@@ -156,27 +156,25 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 
 | File | Action |
 |------|--------|
-| `context/ThemeContext.js` | **New** — theme provider with system-follow + manual override |
 | `constants/colors.js` | **New** — all color tokens for light + dark themes |
-| `constants/styles.js` | **New** — shared reusable styles |
-| `components/WidgetSync.js` | **New** — widget state bridge (Android) |
-| `utils/healthSync.js` | **New** — Health Connect / HealthKit bridge |
-| `components/ShareCard.js` | **New** — streak/achievement card generator |
-| `App.js` | **Edit** — wrap in ThemeProvider, add widget refresh hook |
-| `screens/HomeScreen.js` | **Edit** — adopt theme, optimize renders, debounce quick-log |
-| `screens/LogScreen.js` | **Edit** — adopt theme, add accessibility |
-| `screens/SettingsScreen.js` | **Edit** — theme picker, health sync toggle, app version |
-| `screens/AchievementsScreen.js` | **Edit** — adopt theme |
-| `components/Mascot.js` | **Edit** — ensure visible on both themes |
-| `components/AchievementPopup.js` | **Edit** — adopt theme |
-| `package.json` | **Edit** — add health sync, expo-sharing, view-shot deps |
+| `context/ThemeContext.js` | **New** — theme provider with system-follow + manual override |
+| `App.js` | **Edit** — wrap in ThemeProvider, tab bar uses theme colors |
+| `screens/HomeScreen.js` | **Edit** — adopt theme colors via useTheme() |
+| `screens/LogScreen.js` | **Edit** — adopt theme colors |
+| `screens/SettingsScreen.js` | **Edit** — adopt theme, add Auto/Light/Dark theme picker |
+| `screens/AchievementsScreen.js` | **Edit** — adopt theme colors |
+| `components/Mascot.js` | **Edit** — speech bubble uses theme surface/text colors |
+| `components/MonthlyReport.js` | **Edit** — adopt theme colors |
+| `components/WeatherBanner.js` | **Edit** — adopt theme colors |
+| `components/AchievementPopup.js` | **Edit** — adopt theme colors |
+| `utils/storage.js` | **Edit** — add getThemePreference / saveThemePreference |
 
 ---
 
 ## Success Criteria
 
-- [ ] Dark mode applies to all screens and adapts instantly on toggle
-- [ ] Theme preference persists across app restarts
+- [x] Dark mode applies to all screens and adapts instantly on toggle
+- [x] Theme preference persists across app restarts
 - [ ] Android widget shows live data and quick-log works from widget
 - [ ] Health Connect writes are visible in Google Fit / Health Connect app
 - [ ] Share card generates as a clean image
