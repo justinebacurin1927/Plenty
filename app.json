@@ -44,7 +44,6 @@
       "expo-location",
       "expo-document-picker",
       "./plugins/withPlentyWidget",
-      "expo-health-connect",
       [
         "expo-build-properties",
         {
