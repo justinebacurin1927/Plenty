@@ -1,0 +1,64 @@
+<!-- Plenty home screen widget layout -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@android:color/white">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="💧 Plenty"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#1A3A5C" />
+
+        <TextView
+            android:id="@+id/widget_streak_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="#E67E22" />
+    </LinearLayout>
+
+    <!-- Progress -->
+    <TextView
+        android:id="@+id/widget_progress_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="0ml / 2000ml"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#4A90D9"
+        android:layout_marginTop="12dp" />
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/widget_progress_bar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="12dp"
+        android:layout_marginTop="8dp"
+        android:max="100"
+        android:progress="0" />
+
+    <TextView
+        android:id="@+id/widget_glasses_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="0 glasses"
+        android:textSize="13sp"
+        android:textColor="#6B8CAB"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

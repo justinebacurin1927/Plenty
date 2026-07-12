@@ -25,6 +25,7 @@ import {
   getEscalationTier,
 } from "../utils/notifications";
 import { useTheme } from "../context/ThemeContext";
+import { refreshWidget } from "../utils/widget";
 
 const PRESET_MINUTES = [1, 5, 15, 30, 60, 120];
 
@@ -154,6 +155,14 @@ export default function HomeScreen({ navigation }) {
     } catch (e) {
       console.log("ℹ️ Location not available for weather");
     }
+
+    // Refresh widget on app load
+    refreshWidget({
+      currentMl: totalMl,
+      goalMl: settings.dailyGoal * 250,
+      streak: strk,
+      glassesCount: Math.round(totalMl / 250),
+    }).catch(() => {});
   };
 
   useEffect(() => {
@@ -221,6 +230,14 @@ export default function HomeScreen({ navigation }) {
         setTimeout(() => setMascotCelebration(false), 2000);
         console.log(`🏆 Unlocked: ${newlyUnlocked.map((a) => a.title).join(", ")}`);
       }
+
+      // Update home screen widget
+      refreshWidget({
+        currentMl: todayMl + amount,
+        goalMl: dailyGoal * 250,
+        streak: strk,
+        glassesCount: Math.round((todayMl + amount) / 250),
+      }).catch(() => {});
     },
     [todayMl, dailyGoal]
   );

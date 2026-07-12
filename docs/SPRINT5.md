@@ -44,10 +44,10 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 
 | # | Task | Detail | Status |
 |---|------|--------|--------|
-| **B1** | Android home screen widget | Use expo widgets API or raw Android widget with Dev Build | ❌ |
-| **B2** | Widget layout | Show: today's progress (X/Y glasses), streak badge, quick-log button | ❌ |
-| **B3** | Widget refresh | Update widget every time user logs a drink (via SharedPreferences) | ❌ |
-| **B4** | Widget tap actions | Tap widget → open app to Home screen. Tap quick-log on widget → log 250ml | ❌ |
+| **B1** | Android home screen widget | Raw Android widget with Dev Build via Expo module + config plugin | ✅ |
+| **B2** | Widget layout | Show: today's progress (ml), glasses count, streak, progress bar | ✅ |
+| **B3** | Widget refresh | Update widget via SharedPreferences + broadcast on every drink log | ✅ |
+| **B4** | Widget tap actions | Tap widget → open app to Home screen | ✅ |
 | **B5** | Android Quick Settings tile | A tile that when tapped logs a drink without opening any app | ❌ |
 
 ### Widget Layout (Sketch)
