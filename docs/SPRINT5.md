@@ -97,9 +97,9 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 
 | # | Task | Detail | Status |
 |---|------|--------|--------|
-| **D1** | Share streak card | Generate an image showing streak + weekly stats, share via system share sheet | ❌ |
-| **D2** | Share achievement | Share individual achievement cards ("I just unlocked 🏆 Century on Plenty!") | ❌ |
-| **D3** | Streak card design | Clean, shareable design: app name, streak count, glasses this week, motivational line | ❌ |
+| **D1** | Share streak card | Generate an image showing streak + weekly stats, share via system share sheet | ✅ |
+| **D2** | Share achievement | Share individual achievement cards ("I just unlocked 🏆 Century on Plenty!") | ✅ |
+| **D3** | Streak card design | Clean, shareable design: app name, streak count, glasses this week, motivational line | ✅ |
 | **D4** | Friend challenges (stretch) | Compare streaks with a friend via simple share-and-show — no backend | ❌ |
 
 ### Streak Card Design
@@ -170,7 +170,10 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 | `screens/HomeScreen.js` | **Edit** — adopt theme, refresh widget on log/load, sync to Health Connect |
 | `screens/LogScreen.js` | **Edit** — adopt theme colors |
 | `screens/SettingsScreen.js` | **Edit** — adopt theme, add Auto/Light/Dark theme picker |
-| `screens/AchievementsScreen.js` | **Edit** — adopt theme colors |
+| `screens/AchievementsScreen.js` | **Edit** — adopt theme colors, share button on unlocked achievements |
+| `components/ShareCard.js` | **New** — shareable streak/achievement card with ViewShot capture |
+| `utils/health.js` | **New** — Health Connect sync service (read/write/permissions) |
+| `utils/share.js` | **New** — share image utility via expo-sharing |
 | `components/Mascot.js` | **Edit** — speech bubble uses theme surface/text colors |
 | `components/MonthlyReport.js` | **Edit** — adopt theme colors |
 | `components/WeatherBanner.js` | **Edit** — adopt theme colors |
@@ -185,7 +188,7 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 - [x] Theme preference persists across app restarts
 - [ ] Android widget shows live data and quick-log works from widget
 - [x] Health Connect writes are visible in Google Fit / Health Connect app
-- [ ] Share card generates as a clean image
+- [x] Share card generates as a clean image
 - [ ] Quick-log is debounced (no double-logs)
 - [ ] FlatList scrolls smoothly with no jank on 500+ log entries
 - [ ] All interactive elements have accessibility labels

@@ -31,6 +31,8 @@ import {
   getSyncPreference,
   writeHydrationRecord,
 } from "../utils/health";
+import { ShareCardForwardRef } from "../components/ShareCard";
+import { captureAndShare } from "../utils/share";
 
 const PRESET_MINUTES = [1, 5, 15, 30, 60, 120];
 
@@ -81,6 +83,7 @@ export default function HomeScreen({ navigation }) {
   const [weatherLon, setWeatherLon] = useState(null);
   const [goalSuggestion, setGoalSuggestion] = useState(null);
   const [activityEnabled, setActivityEnabled] = useState(false);
+  const streakCardRef = React.useRef(null);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
 
   // Load everything on mount
@@ -304,8 +307,28 @@ export default function HomeScreen({ navigation }) {
         {streak > 0 && (
           <View style={s.streakBadge}>
             <Text style={s.streakText}>🔥 {streak} day{streak > 1 ? "s" : ""}</Text>
+            <TouchableOpacity
+              style={s.shareStreakBtn}
+              onPress={async () => {
+                await captureAndShare(streakCardRef, "My Plenty streak!");
+              }}
+            >
+              <Ionicons name="share-outline" size={16} color="#fff" />
+            </TouchableOpacity>
           </View>
         )}
+
+        {/* Hidden share card for streak screenshot */}
+        <ShareCardForwardRef
+          ref={streakCardRef}
+          mode="streak"
+          data={{
+            streak,
+            weekGlasses: Math.round(todayMl / 250),
+            bestDay: 0,
+            bestDayLabel: "",
+          }}
+        />
 
         {peakTimeHint && (
           <View style={s.peakHint}>
@@ -532,11 +555,22 @@ function makeStyles(colors) {
       paddingVertical: 6,
       paddingHorizontal: 16,
       borderRadius: 20,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
     },
     streakText: {
       fontSize: 15,
       fontWeight: "700",
       color: colors.warning,
+    },
+    shareStreakBtn: {
+      backgroundColor: "rgba(255,255,255,0.2)",
+      borderRadius: 12,
+      width: 26,
+      height: 26,
+      alignItems: "center",
+      justifyContent: "center",
     },
     peakHint: {
       flexDirection: "row",

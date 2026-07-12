@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Dimensions,
+  TouchableOpacity,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +14,8 @@ import Mascot, { getRandomMessage } from "../components/Mascot";
 import { getLogs, getSettings, getUnlockedAchievements, getAchievementProgress } from "../utils/storage";
 import { buildGalleryList } from "../utils/achievements";
 import { useTheme } from "../context/ThemeContext";
+import { ShareCardForwardRef } from "../components/ShareCard";
+import { captureAndShare } from "../utils/share";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 24 * 3) / 2;
@@ -26,6 +29,8 @@ export default function AchievementsScreen() {
   const [mascotExpression, setMascotExpression] = useState("happy");
   const [mascotMessage, setMascotMessage] = useState(null);
   const [mascotVariant, setMascotVariant] = useState("classic");
+  const [sharingItem, setSharingItem] = useState(null);
+  const achievementCardRef = useRef(null);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
 
   const cycleExpression = () => {
@@ -68,7 +73,19 @@ export default function AchievementsScreen() {
   const unlockedCount = items.filter((i) => i.unlocked).length;
 
   const renderCard = ({ item }) => (
-    <View style={[s.card, item.unlocked && s.cardUnlocked]}>
+    <TouchableOpacity
+      style={[s.card, item.unlocked && s.cardUnlocked]}
+      activeOpacity={item.unlocked ? 0.7 : 1}
+      onPress={async () => {
+        if (!item.unlocked) return;
+        setSharingItem(item);
+        // Wait for the ShareCard to render with the new data, then capture
+        setTimeout(async () => {
+          await captureAndShare(achievementCardRef, `I unlocked ${item.title} on Plenty!`);
+          setSharingItem(null);
+        }, 100);
+      }}
+    >
       <Text style={[s.cardEmoji, !item.unlocked && s.cardEmojiLocked]}>
         {item.emoji}
       </Text>
@@ -83,6 +100,7 @@ export default function AchievementsScreen() {
         <View style={s.unlockedBadge}>
           <Ionicons name="checkmark-circle" size={14} color={colors.success} />
           <Text style={s.unlockedText}>Unlocked</Text>
+          <Ionicons name="share-outline" size={12} color={colors.success} style={{ marginLeft: 4 }} />
         </View>
       ) : (
         <View style={s.progressSection}>
@@ -94,7 +112,7 @@ export default function AchievementsScreen() {
           </Text>
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading && items.length === 0) {
@@ -136,6 +154,16 @@ export default function AchievementsScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+      {/* Hidden share card for achievements */}
+      <ShareCardForwardRef
+        ref={achievementCardRef}
+        mode="achievement"
+        data={{
+          emoji: sharingItem?.emoji || "🏆",
+          title: sharingItem?.title || "",
+          description: sharingItem?.description || "",
+        }}
+      />
     </SafeAreaView>
   );
 }
