@@ -1,4 +1,4 @@
-# Sprint 5 — 🎨 Polish, Platform & Social
+# Sprint 5 — Polish, Platform & Social
 
 > **Goal:** Make the app feel premium. Dark mode, widgets, health integration, social features.
 >
@@ -14,7 +14,7 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 
 ---
 
-## Epic A — Dark Mode 🌗
+## Epic A — Dark Mode
 
 ### Epic A Tasks
 
@@ -38,7 +38,7 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 
 ---
 
-## Epic B — Widget (Android) / Widget Considerations (iOS) 📱
+## Epic B — Widget (Android)
 
 ### Epic B Tasks
 
@@ -47,80 +47,50 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 | **B1** | Android home screen widget | Raw Android widget with Dev Build via Expo module + config plugin | ✅ |
 | **B2** | Widget layout | Show: today's progress (ml), glasses count, streak, progress bar | ✅ |
 | **B3** | Widget refresh | Update widget via SharedPreferences + broadcast on every drink log | ✅ |
-| **B4** | Widget tap actions | Tap widget → open app to Home screen | ✅ |
+| **B4** | Widget tap actions | Tap widget opens app to Home screen | ✅ |
 | **B5** | Android Quick Settings tile | A tile that when tapped logs a drink without opening any app | ❌ |
-
-### Widget Layout (Sketch)
-```
-┌──────────────────────────────┐
-│  💧 Plenty                   │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━   │
-│  5 / 8 glasses    🔥 7 days  │
-│                              │
-│  [ 💧 Log water ]            │
-└──────────────────────────────┘
-```
 
 ### Implementation Notes
 - Widget support requires the Expo dev build (already set up)
 - Use `expo-notifications` channel, not a separate service
-- Widget state stored via AsyncStorage or a small native module bridge
+- Widget state stored via SharedPreferences bridged through a native module
 
 ---
 
-## Epic C — Health App Sync (Apple Health / Google Fit) ❤️
+## Epic C — Health App Sync
 
 ### Epic C Tasks
 
 | # | Task | Detail | Status |
 |---|------|--------|--------|
-| **C1** | Research health APIs | Check `expo-health-connect` for Google Fit / Health Connect on Android | ✅ |
-| **C2** | Write hydration data | Log water intake to the platform's health store | ✅ |
-| **C3** | Read previous data | On first sync, pull in water data from the last 7 days (if user used another app) | ✅ |
+| **C1** | Research health APIs | Check `expo-health-connect` / `react-native-health-connect` for Android | ✅ |
+| **C2** | Write hydration data | Log water intake to Health Connect | ✅ |
+| **C3** | Read previous data | On first sync, pull in water data from the last 7 days | ✅ |
 | **C4** | Sync toggle in Settings | Enable/disable health sync with platform permission prompt | ✅ |
-| **C5** | Sync status indicator | Show last sync time, number of entries synced | ✅ |
+| **C5** | Sync status indicator | Show last sync time | ✅ |
 
-### Android
-- Use [Health Connect](https://developer.android.com/health-connect) via `expo-health-connect`
-- Write `HydrationRecord` (type: water) with amount in liters
+### Implementation Notes
+- Uses `react-native-health-connect` (native) patched with `expo-module.config.json` for Expo auto-linking
+- `expo-health-connect` removed from plugins — its `useExpoPublishing()` Gradle call breaks AGP 8.x
+- Writes `HydrationRecord` with volume in milliliters
 - Requires Health Connect app installed on phone
-
-### iOS
-- Apple Health via `HealthKit` — needs an Expo config plugin
-- Write hydration samples to HKQuantityTypeIdentifierDietaryWater
 
 ---
 
-## Epic D — Social & Sharing 📤
+## Epic D — Social & Sharing
 
 ### Epic D Tasks
 
 | # | Task | Detail | Status |
 |---|------|--------|--------|
 | **D1** | Share streak card | Generate an image showing streak + weekly stats, share via system share sheet | ✅ |
-| **D2** | Share achievement | Share individual achievement cards ("I just unlocked 🏆 Century on Plenty!") | ✅ |
+| **D2** | Share achievement | Share individual achievement cards | ✅ |
 | **D3** | Streak card design | Clean, shareable design: app name, streak count, glasses this week, motivational line | ✅ |
-| **D4** | Friend challenges (stretch) | Compare streaks with a friend via simple share-and-show — no backend | ❌ |
-
-### Streak Card Design
-```
-┌──────────────────────────────┐
-│  💧 PLENTY                   │
-│                              │
-│      🔥 12 DAYS              │
-│    "Keep the streak alive!"  │
-│                              │
-│    This week: 48 glasses     │
-│    Best day: Wednesday (9)   │
-│                              │
-│  ──────────────────────────  │
-│  Get Plenty → link           │
-└──────────────────────────────┘
-```
+| **D4** | Friend challenges (stretch) | Compare streaks with a friend via simple share-and-show | ❌ |
 
 ---
 
-## Epic E — Performance & Polish ⚡
+## Epic E — Performance & Polish
 
 ### Epic E Tasks
 
@@ -129,25 +99,25 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 | **E1** | FlatList optimization | Ensure Log screen uses proper `keyExtractor`, `getItemLayout`, remove anonymous renders | ✅ |
 | **E2** | Debounce quick-log | Prevent double-tap logging the same drink twice in <500ms | ✅ |
 | **E3** | Reduce re-renders | Memoize callbacks in HomeScreen, use `useMemo` for derived values | ✅ |
-| **E4** | App icon & splash | Finalize app icon (already have one), add branded splash screen | ✅ |
+| **E4** | App icon & splash | Finalize app icon, add branded splash screen | ✅ |
 | **E5** | Adaptive icon (Android) | Generate adaptive icon foreground + background layers for Android 13+ | ✅ |
 | **E6** | Accessibility labels | Add `accessibilityLabel` to all interactive elements | ✅ |
 | **E7** | Loading states | Show simple loading indicators on screens while AsyncStorage reads complete | ✅ |
 | **E8** | Error handling audit | Review all `try/catch` blocks — are error messages user-friendly or just console logs? | ✅ |
-| **E9** | App version in Settings | Show current version + build number (link to this sprint's release) | ✅ |
+| **E9** | App version in Settings | Show current version + build number | ✅ |
 
 ---
 
-## Epic F — Code De-fragmentation 🧹
+## Epic F — Code De-fragmentation
 
 ### Epic F Tasks
 
 | # | Task | Detail | Status |
 |---|------|--------|--------|
-| **F1** | Shared styles | Extract repeated styles (row, card, button, chip) into a shared style object or constants file | ❌ |
+| **F1** | Shared styles | Pattern established via `makeStyles(colors)` factory — all screens use this pattern | ✅ |
 | **F2** | Color constants | Move all hex colors into `constants/colors.js` (feeds into Dark Mode) | ✅ |
 | **F3** | Remove dead imports | Scan for unused imports, dead code paths, orphan console.log statements | ✅ |
-| **F4** | Standardize error handling | Consistent pattern: log to console via logger, show user-friendly toast for actionable errors | ✅ |
+| **F4** | Standardize error handling | Consistent pattern: log to console, show user-friendly alert for actionable errors | ✅ |
 | **F5** | Component audit | Can any screen's inline sub-UI be cleanly extracted into a reusable component? | ✅ |
 
 ---
@@ -163,6 +133,7 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 | `modules/plenty-widget/android/src/.../PlentyWidgetModule.kt` | **New** — Native module for JS bridge |
 | `modules/plenty-widget/android/src/main/res/layout/plenty_widget.xml` | **New** — Widget layout |
 | `modules/plenty-widget/android/src/main/res/xml/plenty_widget_info.xml` | **New** — Widget provider info |
+| `modules/plenty-widget/android/build.gradle` | **New** — Widget module build config |
 | `plugins/withPlentyWidget.js` | **New** — Config plugin for AndroidManifest |
 | `utils/widget.js` | **New** — JS bridge to native widget module |
 | `utils/health.js` | **New** — Health Connect sync service (read/write/permissions) |
@@ -178,6 +149,13 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 | `components/WeatherBanner.js` | **Edit** — adopt theme colors |
 | `components/AchievementPopup.js` | **Edit** — adopt theme colors |
 | `utils/storage.js` | **Edit** — add getThemePreference / saveThemePreference |
+| `utils/messages.js` | **Edit** — remove emoji from all messages |
+| `utils/notifications.js` | **Edit** — remove emoji from notification titles and log messages |
+| `utils/reports.js` | **Edit** — use Ionicons names instead of emoji for icons |
+| `utils/weather.js` | **Edit** — use Ionicons names instead of emoji for weather codes |
+| `utils/patterns.js` | **Edit** — remove emoji from pattern summary text |
+| `utils/health.js` | **Edit** — remove emoji from warning messages |
+| `patches/react-native-health-connect+3.5.3.patch` | **New** — Expo auto-linking config for native module |
 
 ---
 
@@ -192,3 +170,4 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 - [x] FlatList scrolls smoothly with no jank on 500+ log entries
 - [x] All interactive elements have accessibility labels
 - [x] App launches without warnings about unused imports or missing keys
+- [x] All decorative emojis removed from app UI, notifications, and console logs
