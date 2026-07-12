@@ -21,7 +21,7 @@ export async function refreshWidget({ currentMl, goalMl, streak, glassesCount })
     });
     return true;
   } catch (e) {
-    console.warn("⚠️ Widget refresh failed:", e.message);
+    console.warn("Widget refresh failed:", e.message);
     return false;
   }
 }

@@ -66,7 +66,7 @@ class PlentyAppWidget : AppWidgetProvider() {
 
             if (progressTextId != 0) views.setTextViewText(progressTextId, "${currentMl}ml / ${goalMl}ml")
             if (glassesTextId != 0) views.setTextViewText(glassesTextId, "${count} glasses")
-            if (streakTextId != 0) views.setTextViewText(streakTextId, if (streak > 0) "🔥 $streak" else "")
+            if (streakTextId != 0) views.setTextViewText(streakTextId, if (streak > 0) "$streak day streak" else "")
 
             if (progressBarId != 0) {
                 val pct = if (goalMl > 0) ((currentMl.toFloat() / goalMl.toFloat()) * 100).toInt().coerceIn(0, 100) else 0
