@@ -74,11 +74,11 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 
 | # | Task | Detail | Status |
 |---|------|--------|--------|
-| **C1** | Research health APIs | Check `expo-health-connect` for Google Fit / Health Connect on Android | ❌ |
-| **C2** | Write hydration data | Log water intake to the platform's health store | ❌ |
-| **C3** | Read previous data | On first sync, pull in water data from the last 7 days (if user used another app) | ❌ |
-| **C4** | Sync toggle in Settings | Enable/disable health sync with platform permission prompt | ❌ |
-| **C5** | Sync status indicator | Show last sync time, number of entries synced | ❌ |
+| **C1** | Research health APIs | Check `expo-health-connect` for Google Fit / Health Connect on Android | ✅ |
+| **C2** | Write hydration data | Log water intake to the platform's health store | ✅ |
+| **C3** | Read previous data | On first sync, pull in water data from the last 7 days (if user used another app) | ✅ |
+| **C4** | Sync toggle in Settings | Enable/disable health sync with platform permission prompt | ✅ |
+| **C5** | Sync status indicator | Show last sync time, number of entries synced | ✅ |
 
 ### Android
 - Use [Health Connect](https://developer.android.com/health-connect) via `expo-health-connect`
@@ -158,8 +158,16 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 |------|--------|
 | `constants/colors.js` | **New** — all color tokens for light + dark themes |
 | `context/ThemeContext.js` | **New** — theme provider with system-follow + manual override |
+| `modules/plenty-widget/expo-module.config.json` | **New** — Expo module config |
+| `modules/plenty-widget/android/src/.../PlentyAppWidget.kt` | **New** — Android AppWidgetProvider |
+| `modules/plenty-widget/android/src/.../PlentyWidgetModule.kt` | **New** — Native module for JS bridge |
+| `modules/plenty-widget/android/src/main/res/layout/plenty_widget.xml` | **New** — Widget layout |
+| `modules/plenty-widget/android/src/main/res/xml/plenty_widget_info.xml` | **New** — Widget provider info |
+| `plugins/withPlentyWidget.js` | **New** — Config plugin for AndroidManifest |
+| `utils/widget.js` | **New** — JS bridge to native widget module |
+| `utils/health.js` | **New** — Health Connect sync service (read/write/permissions) |
 | `App.js` | **Edit** — wrap in ThemeProvider, tab bar uses theme colors |
-| `screens/HomeScreen.js` | **Edit** — adopt theme colors via useTheme() |
+| `screens/HomeScreen.js` | **Edit** — adopt theme, refresh widget on log/load, sync to Health Connect |
 | `screens/LogScreen.js` | **Edit** — adopt theme colors |
 | `screens/SettingsScreen.js` | **Edit** — adopt theme, add Auto/Light/Dark theme picker |
 | `screens/AchievementsScreen.js` | **Edit** — adopt theme colors |
@@ -176,7 +184,7 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 - [x] Dark mode applies to all screens and adapts instantly on toggle
 - [x] Theme preference persists across app restarts
 - [ ] Android widget shows live data and quick-log works from widget
-- [ ] Health Connect writes are visible in Google Fit / Health Connect app
+- [x] Health Connect writes are visible in Google Fit / Health Connect app
 - [ ] Share card generates as a clean image
 - [ ] Quick-log is debounced (no double-logs)
 - [ ] FlatList scrolls smoothly with no jank on 500+ log entries

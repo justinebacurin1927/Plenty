@@ -30,6 +30,13 @@ import { clearWeatherCache } from "../utils/weather";
 import { getLullPeriods, getPeakHours } from "../utils/patterns";
 import { MASCOT_VARIANTS } from "../components/Mascot";
 import { useTheme } from "../context/ThemeContext";
+import {
+  isHealthConnectAvailable,
+  getSyncPreference,
+  saveSyncPreference,
+  requestHydrationPermissions,
+  getLastSyncTime,
+} from "../utils/health";
 
 const MESSAGE_CATEGORIES = [
   { key: "encouraging", icon: "💪", label: "Encouraging", hint: "Motivational messages" },
@@ -58,6 +65,9 @@ export default function SettingsScreen() {
   const [patternLulls, setPatternLulls] = useState([]);
   const [patternPeaks, setPatternPeaks] = useState([]);
   const [exporting, setExporting] = useState(null);
+  const [healthAvailable, setHealthAvailable] = useState(false);
+  const [healthEnabled, setHealthEnabled] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
 
   const cycleExpression = () => {
@@ -90,6 +100,16 @@ export default function SettingsScreen() {
       setPatternLulls(getLullPeriods(logs));
       setPatternPeaks(getPeakHours(logs));
     } catch (e) {}
+
+    // Check Health Connect availability
+    const avail = await isHealthConnectAvailable();
+    setHealthAvailable(avail);
+    if (avail) {
+      const pref = await getSyncPreference();
+      setHealthEnabled(pref);
+      const last = await getLastSyncTime();
+      setLastSyncTime(last);
+    }
   };
 
   const update = async (key, value) => {
@@ -99,6 +119,23 @@ export default function SettingsScreen() {
     } catch (e) {
       console.error("Failed to save settings:", e.message, e.stack);
     }
+  };
+
+  const handleHealthToggle = async (enabled) => {
+    if (enabled) {
+      const granted = await requestHydrationPermissions();
+      if (!granted) {
+        Alert.alert(
+          "Permissions Required",
+          "Health Connect needs permission to read and write hydration data. Open the Health Connect app to grant permissions.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+    }
+    await saveSyncPreference(enabled);
+    setHealthEnabled(enabled);
+    if (!enabled) setLastSyncTime(null);
   };
 
   const handleResetData = () => {
@@ -327,6 +364,49 @@ export default function SettingsScreen() {
             thumbColor={settings.activityAdjustment ? colors.switchThumbOn : colors.switchThumbOff}
           />
         </View>
+
+        {/* ── Health Connect Sync ── */}
+        {(healthAvailable || Platform.OS === "android") && (
+          <>
+            <View style={s.sectionHeader}>
+              <Ionicons name="heart" size={18} color={colors.primary} />
+              <Text style={s.sectionHeaderText}>Health Connect Sync</Text>
+            </View>
+            <View style={s.row}>
+              <View style={s.rowLeft}>
+                <Ionicons name="sync" size={22} color={colors.primary} />
+                <View>
+                  <Text style={s.rowLabel}>Sync to Health Connect</Text>
+                  <Text style={s.rowHint}>
+                    {healthAvailable
+                      ? "Log water intake to Google Health Connect"
+                      : "Health Connect not installed on this device"}
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={healthEnabled}
+                onValueChange={handleHealthToggle}
+                disabled={!healthAvailable}
+                trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
+                thumbColor={healthEnabled ? colors.switchThumbOn : colors.switchThumbOff}
+              />
+            </View>
+            {healthEnabled && lastSyncTime && (
+              <View style={s.row}>
+                <View style={s.rowLeft}>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                  <View>
+                    <Text style={s.rowLabel}>Last Sync</Text>
+                    <Text style={s.rowHint}>
+                      {new Date(lastSyncTime).toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </>
+        )}
 
         {/* ── Pattern Insights ── */}
         {patternPeaks.length > 0 && (

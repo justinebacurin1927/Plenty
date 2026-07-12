@@ -38,7 +38,8 @@
       "expo-sharing",
       "expo-location",
       "expo-document-picker",
-      "./plugins/withPlentyWidget"
+      "./plugins/withPlentyWidget",
+      "expo-health-connect"
     ],
     "extra": {
       "eas": {

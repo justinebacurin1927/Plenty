@@ -26,6 +26,11 @@ import {
 } from "../utils/notifications";
 import { useTheme } from "../context/ThemeContext";
 import { refreshWidget } from "../utils/widget";
+import {
+  isHealthConnectAvailable,
+  getSyncPreference,
+  writeHydrationRecord,
+} from "../utils/health";
 
 const PRESET_MINUTES = [1, 5, 15, 30, 60, 120];
 
@@ -238,9 +243,20 @@ export default function HomeScreen({ navigation }) {
         streak: strk,
         glassesCount: Math.round((todayMl + amount) / 250),
       }).catch(() => {});
+
+      // Sync to Health Connect (best-effort, checks pref internally)
+      _syncToHealth(amount).catch(() => {});
     },
     [todayMl, dailyGoal]
   );
+
+  const _syncToHealth = async (amount) => {
+    const syncEnabled = await getSyncPreference();
+    if (!syncEnabled) return;
+    const available = await isHealthConnectAvailable();
+    if (!available) return;
+    await writeHydrationRecord(amount, new Date().toISOString());
+  };
 
   useEffect(() => {
     (async () => {
