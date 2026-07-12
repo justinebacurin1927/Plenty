@@ -47,7 +47,7 @@ export async function saveSyncPreference(enabled) {
     const { setItem } = require("@react-native-async-storage/async-storage");
     await setItem(STORAGE_KEY, enabled ? "true" : "false");
   } catch (e) {
-    console.warn("⚠️ Failed to save sync preference:", e.message);
+    console.warn("Failed to save sync preference:", e.message);
   }
 }
 
@@ -76,7 +76,7 @@ export async function requestHydrationPermissions() {
     ]);
     return granted && granted.length >= 2;
   } catch (e) {
-    console.warn("⚠️ Health Connect permission request failed:", e.message);
+    console.warn("Health Connect permission request failed:", e.message);
     return false;
   }
 }
@@ -107,7 +107,7 @@ export async function writeHydrationRecord(volumeMl, startTime) {
     await _saveLastSync();
     return true;
   } catch (e) {
-    console.warn("⚠️ Health Connect write failed:", e.message);
+    console.warn("Health Connect write failed:", e.message);
     return false;
   }
 }
@@ -135,7 +135,7 @@ export async function readHydrationRecords(startTime, endTime) {
       startTime: r.startTime,
     }));
   } catch (e) {
-    console.warn("⚠️ Health Connect read failed:", e.message);
+    console.warn("Health Connect read failed:", e.message);
     return [];
   }
 }

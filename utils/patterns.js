@@ -131,18 +131,18 @@ export function getPatternSummary(logs) {
   const parts = [];
 
   if (peaks.length > 0) {
-    parts.push(`📈 Peak: ${peaks[0].label}`);
+    parts.push(`Peak: ${peaks[0].label}`);
   }
 
   if (lulls.length > 0) {
     const significant = lulls.filter((l) => l.severity === "gap");
     if (significant.length > 0) {
-      parts.push(`📉 Gap: ${significant[0].label}`);
+      parts.push(`Gap: ${significant[0].label}`);
     }
   }
 
   if (lowestDay) {
-    parts.push(`📅 Low: ${lowestDay.name}s (avg ${lowestDay.avg}ml)`);
+    parts.push(`Low: ${lowestDay.name}s (avg ${lowestDay.avg}ml)`);
   }
 
   return parts.length > 0 ? parts.join(" · ") : null;

@@ -15,7 +15,7 @@ export default class ErrorBoundary extends React.Component {
   componentDidCatch(error, info) {
     // Use the original console.error if available
     try {
-      console.error("🎯 ErrorBoundary caught:", error.message);
+      console.error("ErrorBoundary caught:", error.message);
     } catch (_) {}
   }
 
@@ -26,7 +26,7 @@ export default class ErrorBoundary extends React.Component {
         <SafeAreaView style={{ flex: 1, backgroundColor: "#1A1D23" }}>
           <View style={{ padding: 24, paddingTop: 60, flex: 1 }}>
             <Text style={{ fontSize: 26, fontWeight: "700", color: "#E8596E", marginBottom: 20 }}>
-              🚨 Error
+              Error
             </Text>
             <ScrollView style={{ flex: 1 }}>
               <Text style={{ fontSize: 18, fontWeight: "600", color: "#FF6B6B", marginBottom: 8 }}>

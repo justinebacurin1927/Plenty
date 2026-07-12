@@ -296,7 +296,7 @@ export async function checkAchievements() {
 
     return newlyUnlocked;
   } catch (e) {
-    console.error("❌ Achievement check failed:", e.message, e.stack);
+    console.error("Achievement check failed:", e.message, e.stack);
     return [];
   }
 }
@@ -346,13 +346,13 @@ export async function sendAchievementNotification(achievement) {
     const Notifications = require("expo-notifications");
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `🏆 Achievement Unlocked!`,
+        title: `Achievement Unlocked!`,
         body: `${achievement.emoji} ${achievement.title} — ${achievement.description}`,
         data: { type: "achievement", id: achievement.id },
       },
       trigger: null, // immediate
     });
   } catch (e) {
-    console.error("❌ Failed to send achievement notification:", e.message);
+    console.error("Failed to send achievement notification:", e.message);
   }
 }

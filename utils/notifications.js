@@ -91,9 +91,9 @@ export async function setupNotificationCategories() {
         options: { opensAppToForeground: false },
       },
     ]);
-    console.log("✅ Notification categories set up");
+    console.log("Notification categories set up");
   } catch (e) {
-    console.error("❌ Failed to set up notification categories:", e.message);
+    console.error("Failed to set up notification categories:", e.message);
   }
 }
 
@@ -115,13 +115,13 @@ export function setupResponseHandler() {
         await handleQuickLog(notification);
       }
     } catch (e) {
-      console.error("❌ Notification response handler error:", e.message);
+      console.error("Notification response handler error:", e.message);
     }
   });
 }
 
 async function handleSnooze() {
-  console.log("⏰ Snoozing reminders for 15 minutes");
+  console.log("Snoozing reminders for 15 minutes");
   await cancelAllReminders();
 
   await Notifications.scheduleNotificationAsync({
@@ -137,11 +137,11 @@ async function handleSnooze() {
     },
   });
 
-  console.log("✅ Snoozed — next reminder in 15 min");
+  console.log("Snoozed — next reminder in 15 min");
 }
 
 async function handleQuickLog(notification) {
-  console.log("💧 Quick-logged 250ml from notification");
+  console.log("Quick-logged 250ml from notification");
   await addLog({ amount: 250, source: "notification" });
 
   // ─── Speed Demon check ────────────────────────────
@@ -151,7 +151,7 @@ async function handleQuickLog(notification) {
     const elapsed = Date.now() - deliveredAt;
     if (elapsed < 60000) {
       await incrementAchievementProgress("speed_demon");
-      console.log("⚡ Speed Demon progress +1 (responded in ${Math.round(elapsed / 1000)}s)");
+      console.log("Speed Demon progress +1 (responded in ${Math.round(elapsed / 1000)}s)");
     }
   }
 
@@ -198,7 +198,7 @@ export async function requestPermission() {
       final = status;
     }
     if (final !== "granted") {
-      console.warn("🚫 Notification permission not granted");
+      console.warn("Notification permission not granted");
       return false;
     }
 
@@ -206,7 +206,7 @@ export async function requestPermission() {
     await setupNotificationCategories();
     return true;
   } catch (e) {
-    console.error("❌ Failed to request notification permission:", e.message);
+    console.error("Failed to request notification permission:", e.message);
     return false;
   }
 }
@@ -223,7 +223,7 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
     if (tier === "alert") {
       // Shorten interval to 5 min during alert tier
       delaySeconds = Math.min(delaySeconds, 300);
-      console.log(`🔴 Alert tier — interval reduced to ${delaySeconds}s`);
+      console.log(`Alert tier — interval reduced to ${delaySeconds}s`);
     }
 
     // ─── Weather-based heat adjustment (D3) ─────────
@@ -233,7 +233,7 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
         const adjusted = getHeatAdjustedInterval(weather.temp, delaySeconds);
         if (adjusted < delaySeconds) {
           delaySeconds = adjusted;
-          console.log(`☀️ Heat adjustment: interval reduced to ${delaySeconds}s (${Math.round(weather.temp)}°C)`);
+          console.log(`Heat adjustment: interval reduced to ${delaySeconds}s (${Math.round(weather.temp)}°C)`);
         }
       }
     } catch (e) {
@@ -244,7 +244,7 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
     if (quietHours.enabled && isInQuietHours(quietHours.start, quietHours.end)) {
       delaySeconds = Math.max(minutesUntil(quietHours.end) * 60, 60);
       console.log(
-        `🌙 In quiet hours — first reminder in ${Math.round(delaySeconds / 60)} minutes`
+        `In quiet hours — first reminder in ${Math.round(delaySeconds / 60)} minutes`
       );
     }
 
@@ -288,11 +288,11 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
     });
 
     console.log(
-      `✅ Notification scheduled (ID: ${id}) — tier: ${tier}, message: "${message.text}"`
+      `Notification scheduled (ID: ${id}) — tier: ${tier}, message: "${message.text}"`
     );
     return id;
   } catch (e) {
-    console.error("❌ Failed to schedule notification:", e.message);
+    console.error("Failed to schedule notification:", e.message);
   }
 }
 
@@ -301,10 +301,10 @@ export async function cancelAllReminders() {
     const existing = await Notifications.getAllScheduledNotificationsAsync();
     if (existing.length > 0) {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log("✅ All reminders cancelled");
+      console.log("All reminders cancelled");
     }
   } catch (e) {
-    console.error("❌ Failed to cancel reminders:", e.message);
+    console.error("Failed to cancel reminders:", e.message);
   }
 }
 
@@ -312,7 +312,7 @@ export async function getScheduledReminders() {
   try {
     return await Notifications.getAllScheduledNotificationsAsync();
   } catch (e) {
-    console.error("❌ Failed to get reminders:", e.message);
+    console.error("Failed to get reminders:", e.message);
     return [];
   }
 }

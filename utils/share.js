@@ -12,7 +12,7 @@ export async function shareImage(uri, subject) {
   if (!uri) return false;
 
   if (!(await Sharing.isAvailableAsync())) {
-    console.warn("⚠️ Sharing is not available on this device");
+    console.warn("Sharing is not available on this device");
     return false;
   }
 
@@ -24,7 +24,7 @@ export async function shareImage(uri, subject) {
     });
     return true;
   } catch (e) {
-    console.warn("⚠️ Share failed:", e.message);
+    console.warn("Share failed:", e.message);
     return false;
   }
 }

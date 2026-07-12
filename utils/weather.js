@@ -49,7 +49,7 @@ export async function fetchWeather(lat, lon) {
     await setCache(result);
     return result;
   } catch (e) {
-    console.error("🌤️ Weather fetch failed:", e.message);
+    console.error("Weather fetch failed:", e.message);
     return null;
   }
 }

@@ -95,7 +95,7 @@ export default function HomeScreen({ navigation }) {
     );
     checkAchievements().then((unlocked) => {
       if (unlocked.length > 0) {
-        console.log(`🏆 Background unlock: ${unlocked.map((a) => a.title).join(", ")}`);
+        console.log(`Background unlock: ${unlocked.map((a) => a.title).join(", ")}`);
       }
     });
   }, []);
@@ -182,11 +182,11 @@ export default function HomeScreen({ navigation }) {
 
   const startReminder = async () => {
     try {
-      console.log("🔔 Requesting notification permission...");
+      console.log("Requesting notification permission...");
       const granted = await requestPermission();
       setPermissionGranted(granted);
       if (!granted) {
-        console.warn("🚫 Notification permission denied");
+        console.warn("Notification permission denied");
         return;
       }
 
@@ -195,7 +195,7 @@ export default function HomeScreen({ navigation }) {
         setIntervalError("Minimum interval is 60 seconds on Android");
         return;
       }
-      console.log(`✅ Scheduling reminders every ${formatInterval(selectedInterval)}`);
+      console.log(`Scheduling reminders every ${formatInterval(selectedInterval)}`);
       const settings = await getSettings();
       await scheduleWaterReminder(selectedInterval, {
         enabled: settings.quietHoursEnabled,
@@ -203,21 +203,21 @@ export default function HomeScreen({ navigation }) {
         end: settings.quietHoursEnd,
       });
       setIsActive(true);
-      console.log("✅ Reminders are now active");
+      console.log("Reminders are now active");
     } catch (e) {
-      console.error("❌ Failed to start reminders:", e.message, e.stack);
+      console.error("Failed to start reminders:", e.message, e.stack);
       Alert.alert("Could Not Start Reminders", e.message || "An error occurred");
     }
   };
 
   const stopReminder = async () => {
     try {
-      console.log("🛑 Stopping all reminders");
+      console.log("Stopping all reminders");
       await cancelAllReminders();
       setIsActive(false);
-      console.log("✅ All reminders cancelled");
+      console.log("All reminders cancelled");
     } catch (e) {
-      console.error("❌ Failed to stop reminders:", e.message, e.stack);
+      console.error("Failed to stop reminders:", e.message, e.stack);
     }
   };
 
@@ -234,7 +234,7 @@ export default function HomeScreen({ navigation }) {
       const strk = await getStreak(dailyGoal);
       setStreak(strk);
       setMascotExpression(streakToExpression(strk));
-      console.log(`💧 Drank ${amount}ml! Total today: ${todayMl + amount}ml`);
+      console.log(`Drank ${amount}ml! Total today: ${todayMl + amount}ml`);
 
       const newlyUnlocked = await checkAchievements();
       if (newlyUnlocked.length > 0) {
@@ -243,7 +243,7 @@ export default function HomeScreen({ navigation }) {
         setMascotExpression("excited");
         setMascotMessage(`${newlyUnlocked[0].emoji} ${newlyUnlocked[0].title}!`);
         setTimeout(() => setMascotCelebration(false), 2000);
-        console.log(`🏆 Unlocked: ${newlyUnlocked.map((a) => a.title).join(", ")}`);
+        console.log(`Unlocked: ${newlyUnlocked.map((a) => a.title).join(", ")}`);
       }
 
       // Update home screen widget
@@ -274,8 +274,8 @@ export default function HomeScreen({ navigation }) {
         const reminders = await getScheduledReminders();
         console.log(
           reminders.length > 0
-            ? `✅ Found ${reminders.length} active reminder(s) on app start`
-            : "ℹ️ No active reminders on app start"
+            ? `Found ${reminders.length} active reminder(s) on app start`
+            : "No active reminders on app start"
         );
         if (reminders.length > 0) setIsActive(true);
       } catch (e) {

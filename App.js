@@ -22,7 +22,7 @@ if (global.ErrorUtils) {
   const prevHandler = global.ErrorUtils.getGlobalHandler();
   global.ErrorUtils.setGlobalHandler((error, isFatal) => {
     try {
-      const msg = `🚨 UNCAUGHT${isFatal ? " FATAL" : ""} ERROR: ${error.message}\n${error.stack}`;
+      const msg = `UNCAUGHT${isFatal ? " FATAL" : ""} ERROR: ${error.message}\n${error.stack}`;
       _origConsoleError(msg);
     } catch (_) {}
   });
@@ -32,7 +32,7 @@ if (global.ErrorUtils && typeof global.ErrorUtils.reportError === "function") {
   const origReportError = global.ErrorUtils.reportError.bind(global.ErrorUtils);
   global.ErrorUtils.reportError = (error) => {
     try {
-      _origConsoleError(`🚨 REPORTED ERROR: ${error?.message}\n${error?.stack}`);
+      _origConsoleError(`REPORTED ERROR: ${error?.message}\n${error?.stack}`);
     } catch (_) {}
   };
 }
