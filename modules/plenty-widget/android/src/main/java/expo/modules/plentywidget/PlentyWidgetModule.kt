@@ -36,8 +36,6 @@ class PlentyWidgetModule : Module() {
                 `package` = context.packageName
             }
             context.sendBroadcast(intent)
-
-            return@Function true
         }
     }
 }
