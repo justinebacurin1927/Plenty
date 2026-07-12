@@ -241,7 +241,7 @@ export default function HomeScreen({ navigation }) {
         setPopupAchievements(newlyUnlocked);
         setMascotCelebration(true);
         setMascotExpression("excited");
-        setMascotMessage(`🎉 ${newlyUnlocked[0].emoji} ${newlyUnlocked[0].title}!`);
+        setMascotMessage(`${newlyUnlocked[0].emoji} ${newlyUnlocked[0].title}!`);
         setTimeout(() => setMascotCelebration(false), 2000);
         console.log(`🏆 Unlocked: ${newlyUnlocked.map((a) => a.title).join(", ")}`);
       }
@@ -319,7 +319,8 @@ export default function HomeScreen({ navigation }) {
 
         {streak > 0 && (
           <View style={s.streakBadge}>
-            <Text style={s.streakText}>🔥 {streak} day{streak > 1 ? "s" : ""}</Text>
+            <Ionicons name="flame" size={18} color={colors.warning} />
+            <Text style={s.streakText}>{streak} day{streak > 1 ? "s" : ""}</Text>
             <TouchableOpacity
               style={s.shareStreakBtn}
               onPress={async () => {
@@ -361,8 +362,8 @@ export default function HomeScreen({ navigation }) {
             <Ionicons name={escalationTier === "alert" ? "alert-circle" : "warning"} size={18} color="#fff" />
             <Text style={s.escalationText}>
               {escalationTier === "alert"
-                ? "🔴 You haven't logged in a while! Drink some water now."
-                : "⚠️ It's been a while — time to hydrate!"}
+                ? "You haven't logged in a while! Drink some water now."
+                : "It's been a while -- time to hydrate!"}
             </Text>
           </View>
         )}
@@ -379,7 +380,10 @@ export default function HomeScreen({ navigation }) {
             <View style={[s.barFill, { width: `${progressPct * 100}%` }]} />
           </View>
           {progressPct >= 1 && (
-            <Text style={s.goalMet}>🎉 Goal reached!</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+              <Text style={s.goalMet}>Goal reached!</Text>
+            </View>
           )}
         </View>
 

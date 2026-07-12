@@ -82,7 +82,7 @@ export async function setupNotificationCategories() {
     await Notifications.setNotificationCategoryAsync("water-reminder", [
       {
         identifier: "drink",
-        buttonTitle: "💧 I drank!",
+        buttonTitle: "I drank!",
         options: { opensAppToForeground: false },
       },
       {
@@ -126,8 +126,8 @@ async function handleSnooze() {
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "💧 Time to drink water!",
-      body: "⏰ Snoozed reminder — time to hydrate!",
+      title: "Time to drink water!",
+      body: "Snoozed reminder — time to hydrate!",
       data: { type: "snooze-followup" },
     },
     trigger: {
@@ -168,7 +168,7 @@ async function handleQuickLog(notification) {
 
 function buildEscalationContent(tier, message) {
   const base = {
-    title: "💧 Time to drink water!",
+    title: "Time to drink water!",
     body: message.text,
     data: { type: "reminder", tier },
     categoryIdentifier: "water-reminder",
@@ -179,9 +179,9 @@ function buildEscalationContent(tier, message) {
   }
 
   if (tier === "alert") {
-    base.title = "🔴 Please drink water!";
+    base.title = "Please drink water!";
   } else if (tier === "warning") {
-    base.title = "⚠️ Don't forget to hydrate!";
+    base.title = "Don't forget to hydrate!";
   }
 
   return base;

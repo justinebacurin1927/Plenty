@@ -139,7 +139,7 @@ export default function AchievementsScreen() {
 
       {items.length === 0 ? (
         <View style={s.empty}>
-          <Text style={s.emptyEmoji}>🏆</Text>
+          <Ionicons name="trophy" size={60} color={colors.textTertiary} />
           <Text style={s.emptyText}>No achievements yet</Text>
           <Text style={s.emptyHint}>Keep drinking water to earn your first badge!</Text>
         </View>
@@ -159,7 +159,7 @@ export default function AchievementsScreen() {
         ref={achievementCardRef}
         mode="achievement"
         data={{
-          emoji: sharingItem?.emoji || "🏆",
+          emoji: sharingItem?.emoji || "",
           title: sharingItem?.title || "",
           description: sharingItem?.description || "",
         }}
@@ -294,10 +294,6 @@ function makeStyles(colors) {
       alignItems: "center",
       justifyContent: "center",
       paddingBottom: 60,
-    },
-    emptyEmoji: {
-      fontSize: 60,
-      marginBottom: 12,
     },
     emptyText: {
       fontSize: 17,

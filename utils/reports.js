@@ -192,31 +192,31 @@ export function getHighlights(report) {
 
   if (report.bestStreak >= 7) {
     highlights.push({
-      icon: "🔥",
+      icon: "flame",
       text: `Best streak ever: ${report.bestStreak} days!`,
     });
   } else if (report.bestStreak >= 3) {
     highlights.push({
-      icon: "🔥",
+      icon: "flame",
       text: `Nice streak: ${report.bestStreak} days`,
     });
   }
 
   if (report.avgPerDay >= 8) {
     highlights.push({
-      icon: "⭐",
+      icon: "star",
       text: `Averaged ${report.avgPerDay} glasses/day — excellent!`,
     });
   } else if (report.avgPerDay >= 6) {
     highlights.push({
-      icon: "💪",
+      icon: "fitness",
       text: `Averaged ${report.avgPerDay} glasses/day`,
     });
   }
 
   if (report.goalHits > report.totalDays * 0.7) {
     highlights.push({
-      icon: "🏆",
+      icon: "trophy",
       text: `Hit your goal ${report.goalHits} out of ${report.totalDays} days`,
     });
   }
@@ -224,14 +224,14 @@ export function getHighlights(report) {
   if (report.bestDay) {
     const bestDate = new Date(report.bestDay);
     highlights.push({
-      icon: "☀️",
+      icon: "sunny",
       text: `Most hydrated day: ${bestDate.toLocaleDateString("default", { month: "short", day: "numeric" })}`,
     });
   }
 
   if (report.totalGlasses >= 200) {
     highlights.push({
-      icon: "💧",
+      icon: "water",
       text: `${report.totalGlasses} glasses logged — crushing it!`,
     });
   }

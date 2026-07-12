@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, Animated, StyleSheet, Dimensions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -146,7 +147,7 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
             ))}
           </View>
 
-          <Text style={s.trophy}>🏆</Text>
+          <Ionicons name="trophy" size={48} color={colors.warning} />
           <Text style={s.emoji}>{achievement.emoji}</Text>
           <Text style={s.title}>{achievement.title}</Text>
           <Text style={s.description}>{achievement.description}</Text>

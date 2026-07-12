@@ -59,9 +59,8 @@ export default function WeatherBanner({ hasLocation, lat, lon }) {
   if (!advisory) {
     return (
       <View style={s.infoBanner}>
-        <Text style={s.infoText}>
-          {weatherCodeToEmoji(weatherCode)} {Math.round(temp)}°C
-        </Text>
+        <Ionicons name={weatherCodeToEmoji(weatherCode)} size={18} color={colors.primary} />
+        <Text style={s.infoText}>{Math.round(temp)}°C</Text>
       </View>
     );
   }
@@ -79,7 +78,7 @@ export default function WeatherBanner({ hasLocation, lat, lon }) {
       activeOpacity={0.8}
     >
       <View style={s.advisoryContent}>
-        <Text style={s.advisoryIcon}>{advisory.icon}</Text>
+        <Ionicons name={advisory.icon} size={18} color="#fff" />
         <Text style={s.advisoryText}>{advisory.text}</Text>
       </View>
     </TouchableOpacity>
@@ -89,7 +88,9 @@ export default function WeatherBanner({ hasLocation, lat, lon }) {
 function makeStyles(colors) {
   return StyleSheet.create({
     infoBanner: {
+      flexDirection: "row",
       alignItems: "center",
+      gap: 6,
       marginTop: 4,
       marginBottom: 4,
     },

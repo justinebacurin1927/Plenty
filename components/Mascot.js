@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
 export const BUBBLE_MESSAGES = [
-  "💧 Drink up!",
+  "Drink up!",
   "Stay hydrated!",
   "I'm wet!",
   "glug glug glug",
@@ -11,9 +12,9 @@ export const BUBBLE_MESSAGES = [
   "Thirsty? Same.",
   "H2-Oh yeah!",
   "Plenty of time!",
-  "Splash! 💦",
+  "Splash!",
   "Don't forget!",
-  "Cheers! 🥤",
+  "Cheers!",
   "Drip drop!",
   "Water is life!",
   "Make a splash!",
@@ -180,7 +181,7 @@ function Accessory({ variant, size }) {
   if (variant === "crown") {
     return (
       <View style={[styles.accessory, { top: -size * 0.1 }]}>
-        <Text style={{ fontSize: 20 * (s / 0.62), marginTop: -4 }}>👑</Text>
+        <Ionicons name="ribbon" size={20 * (s / 0.62)} color="#FFD700" style={{ marginTop: -4 }} />
       </View>
     );
   }
@@ -189,10 +190,10 @@ function Accessory({ variant, size }) {
     return (
       <>
         <View style={[styles.accessory, { top: -size * 0.15, left: -size * 0.15 }]}>
-          <Text style={{ fontSize: 10 * (s / 0.62) }}>✨</Text>
+          <Ionicons name="sparkles" size={10 * (s / 0.62)} color="#FFD700" />
         </View>
         <View style={[styles.accessory, { top: -size * 0.1, right: -size * 0.15 }]}>
-          <Text style={{ fontSize: 8 * (s / 0.62) }}>⭐</Text>
+          <Ionicons name="star" size={8 * (s / 0.62)} color="#FFD700" />
         </View>
       </>
     );

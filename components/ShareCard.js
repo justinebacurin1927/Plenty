@@ -78,9 +78,8 @@ function StreakContent({ data }) {
     data || {};
   return (
     <View style={styles.card}>
-      <Text style={styles.appName}>💧 PLENTY</Text>
+      <Text style={styles.appName}>PLENTY</Text>
       <View style={styles.divider} />
-      <Text style={styles.fireEmoji}>🔥</Text>
       <Text style={styles.streakNumber}>{streak}</Text>
       <Text style={styles.streakLabel}>DAY{streak !== 1 ? "S" : ""}</Text>
       <Text style={styles.tagline}>
@@ -106,7 +105,7 @@ function AchievementContent({ data }) {
   const { title = "", description = "", emoji = "" } = data || {};
   return (
     <View style={styles.card}>
-      <Text style={styles.appName}>💧 PLENTY</Text>
+      <Text style={styles.appName}>PLENTY</Text>
       <View style={styles.divider} />
       <Text style={styles.achievementEmoji}>{emoji}</Text>
       <Text style={styles.achievementTitle}>{title}</Text>
@@ -141,10 +140,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "rgba(107, 181, 255, 0.3)",
     marginVertical: 14,
-  },
-  fireEmoji: {
-    fontSize: 48,
-    marginBottom: 4,
   },
   streakNumber: {
     fontSize: 64,

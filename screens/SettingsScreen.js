@@ -40,12 +40,12 @@ import {
 } from "../utils/health";
 
 const MESSAGE_CATEGORIES = [
-  { key: "encouraging", icon: "💪", label: "Encouraging", hint: "Motivational messages" },
-  { key: "funny",      icon: "😄", label: "Funny",       hint: "Playful and lighthearted" },
-  { key: "urgent",     icon: "🔔", label: "Urgent",      hint: "Direct reminders" },
-  { key: "fact",       icon: "🧠", label: "Health Facts", hint: "Science and trivia" },
-  { key: "morning",    icon: "☀️", label: "Morning",     hint: "Time-appropriate AM messages" },
-  { key: "evening",    icon: "🌙", label: "Evening",     hint: "Wind-down PM messages" },
+  { key: "encouraging", icon: "megaphone", label: "Encouraging", hint: "Motivational messages" },
+  { key: "funny",      icon: "happy",      label: "Funny",       hint: "Playful and lighthearted" },
+  { key: "urgent",     icon: "alert-circle",  label: "Urgent",      hint: "Direct reminders" },
+  { key: "fact",       icon: "bulb",       label: "Health Facts", hint: "Science and trivia" },
+  { key: "morning",    icon: "sunny",      label: "Morning",     hint: "Time-appropriate AM messages" },
+  { key: "evening",    icon: "moon",       label: "Evening",     hint: "Wind-down PM messages" },
 ];
 
 const THEME_OPTIONS = [
@@ -301,16 +301,15 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── Weight-Based Goal ── */}
-        <View style={s.row}>
-          <View style={s.rowLeft}>
+        <View style={s.rowGroup}>
+          <View style={s.rowGroupHeader}>
             <Ionicons name="scale" size={22} color={colors.primary} />
             <View>
               <Text style={s.rowLabel}>Weight-Based Goal</Text>
               <Text style={s.rowHint}>Auto-calculates daily goal</Text>
             </View>
           </View>
-        </View>
-        <View style={s.weightRow}>
+          <View style={s.weightRow}>
           <TextInput
             style={s.weightInput}
             placeholder="Weight"
@@ -351,6 +350,7 @@ export default function SettingsScreen() {
               → {weightBasedGoal(settings.weightKg)} glasses/day
             </Text>
           )}
+        </View>
         </View>
 
         {/* ── Activity Adjustment ── */}
@@ -453,7 +453,7 @@ export default function SettingsScreen() {
           <Ionicons name="location" size={18} color={colors.primary} />
           <Text style={s.sectionHeaderText}>Weather Location</Text>
         </View>
-        <View style={s.weightRow}>
+        <View style={s.row}>
           <TextInput
             style={[s.weightInput, { flex: 2 }]}
             placeholder="City or zip code"
@@ -544,7 +544,7 @@ export default function SettingsScreen() {
               const summary = await importFromJSON(jsonString);
               Alert.alert(
                 "Restored!",
-                `Imported ${summary.logs} log entries.\n${summary.hasSettings ? "✅ Settings restored\n" : ""}${summary.hasAchievements ? "✅ Achievements restored" : ""}`,
+                `Imported ${summary.logs} log entries.\n${summary.hasSettings ? "Settings restored\n" : ""}${summary.hasAchievements ? "Achievements restored" : ""}`,
                 [{ text: "Great!" }]
               );
               await loadSettings();
@@ -577,7 +577,7 @@ export default function SettingsScreen() {
         {MESSAGE_CATEGORIES.map((cat) => (
           <View key={cat.key} style={s.row}>
             <View style={s.rowLeft}>
-              <Text style={s.catIcon}>{cat.icon}</Text>
+              <Ionicons name={cat.icon} size={22} color={colors.primary} />
               <View>
                 <Text style={s.rowLabel}>{cat.label}</Text>
                 <Text style={s.rowHint}>{cat.hint}</Text>
@@ -618,9 +618,11 @@ export default function SettingsScreen() {
                 onPress={() => update("mascotVariant", v.id)}
               >
                 <View style={s.mascotCardPreview}>
-                  <Text style={s.mascotPreviewEmoji}>
-                    {v.id === "classic" ? "💧" : v.id === "cool" ? "😎" : v.id === "crown" ? "👑" : "✨"}
-                  </Text>
+                  <Ionicons
+                    name={v.id === "classic" ? "water" : v.id === "cool" ? "glasses" : v.id === "crown" ? "ribbon" : "sparkles"}
+                    size={28}
+                    color={isActive ? colors.primary : colors.textSection}
+                  />
                 </View>
                 <Text style={[s.mascotCardLabel, !isUnlocked && s.mascotCardLabelLocked]}>
                   {v.label}
@@ -659,10 +661,9 @@ function makeStyles(colors) {
     container: {
       flex: 1,
       backgroundColor: colors.bg,
-      paddingTop: 80,
+      paddingTop: 60,
     },
     scroll: {
-      paddingTop: 40,
       paddingBottom: 40,
     },
     header: {
@@ -670,8 +671,7 @@ function makeStyles(colors) {
       alignItems: "center",
       gap: 12,
       paddingHorizontal: 24,
-      paddingTop: 0,
-      paddingBottom: 12,
+      paddingBottom: 8,
     },
     title: {
       fontSize: 28,
@@ -773,6 +773,27 @@ function makeStyles(colors) {
       fontSize: 22,
     },
 
+    // ── Row Group (connected card, e.g. weight goal) ──
+    rowGroup: {
+      marginHorizontal: 24,
+      marginTop: 12,
+      borderRadius: 14,
+      backgroundColor: colors.surface,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+      overflow: "hidden",
+    },
+    rowGroupHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 20,
+    },
+
     // ── Theme Row (Sprint 5) ──
     themeRow: {
       flexDirection: "row",
@@ -808,18 +829,9 @@ function makeStyles(colors) {
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceSecondary,
       paddingVertical: 12,
       paddingHorizontal: 20,
-      marginHorizontal: 24,
-      borderBottomLeftRadius: 14,
-      borderBottomRightRadius: 14,
-      marginBottom: 4,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
     },
     weightInput: {
       flex: 1,

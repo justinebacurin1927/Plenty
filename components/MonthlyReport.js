@@ -109,9 +109,10 @@ export default function MonthlyReport() {
               {highlights.length > 0 && (
                 <View style={s.highlights}>
                   {highlights.slice(0, 3).map((h, i) => (
-                    <Text key={i} style={s.highlight}>
-                      {h.icon} {h.text}
-                    </Text>
+                    <View key={i} style={s.highlightRow}>
+                      <Ionicons name={h.icon} size={14} color={colors.warning} />
+                      <Text style={s.highlightText}>{h.text}</Text>
+                    </View>
                   ))}
                 </View>
               )}
@@ -225,7 +226,12 @@ function makeStyles(colors) {
       padding: 12,
       gap: 4,
     },
-    highlight: {
+    highlightRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    highlightText: {
       fontSize: 13,
       fontWeight: "600",
       color: colors.text,

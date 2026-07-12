@@ -57,16 +57,16 @@ export async function fetchWeather(lat, lon) {
 // ─── Weather Descriptions ─────────────────────────────
 
 export function weatherCodeToEmoji(code) {
-  if (code === undefined || code === null) return "☀️";
-  if (code === 0) return "☀️"; // clear
-  if (code <= 3) return "⛅"; // partly cloudy
-  if (code <= 48) return "🌫️"; // foggy
-  if (code <= 57) return "🌧️"; // drizzle
-  if (code <= 67) return "🌧️"; // rain
-  if (code <= 77) return "❄️"; // snow
-  if (code <= 82) return "🌦️"; // showers
-  if (code <= 86) return "⛈️"; // thunder
-  return "🌧️"; // default
+  if (code === undefined || code === null) return "sunny";
+  if (code === 0) return "sunny"; // clear
+  if (code <= 3) return "partly-sunny"; // partly cloudy
+  if (code <= 48) return "cloudy"; // foggy
+  if (code <= 57) return "rainy"; // drizzle
+  if (code <= 67) return "rainy"; // rain
+  if (code <= 77) return "snow"; // snow
+  if (code <= 82) return "rainy"; // showers
+  if (code <= 86) return "thunderstorm"; // thunder
+  return "rainy"; // default
 }
 
 // ─── Heat Adjustment (D3) ─────────────────────────────
@@ -91,21 +91,21 @@ export function getWeatherAdvisory(temp, maxTemp) {
   if (t >= 38) {
     return {
       level: "extreme",
-      icon: "🔥",
+      icon: "flame",
       text: `Extreme heat — ${Math.round(t)}°C! Drink extra water today.`,
     };
   }
   if (t >= 33) {
     return {
       level: "high",
-      icon: "☀️",
+      icon: "sunny",
       text: `${Math.round(t)}°C today — stay hydrated!`,
     };
   }
   if (t >= 30) {
     return {
       level: "warm",
-      icon: "🌤️",
+      icon: "partly-sunny",
       text: `${Math.round(t)}°C — a bit warm, keep drinking!`,
     };
   }
