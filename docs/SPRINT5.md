@@ -145,10 +145,10 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 | # | Task | Detail | Status |
 |---|------|--------|--------|
 | **F1** | Shared styles | Extract repeated styles (row, card, button, chip) into a shared style object or constants file | ❌ |
-| **F2** | Color constants | Move all hex colors into `constants/colors.js` (feeds into Dark Mode) | ❌ |
-| **F3** | Remove dead imports | Scan for unused imports, dead code paths, orphan console.log statements | ❌ |
-| **F4** | Standardize error handling | Consistent pattern: log to console via logger, show user-friendly toast for actionable errors | ❌ |
-| **F5** | Component audit | Can any screen's inline sub-UI be cleanly extracted into a reusable component? | ❌ |
+| **F2** | Color constants | Move all hex colors into `constants/colors.js` (feeds into Dark Mode) | ✅ |
+| **F3** | Remove dead imports | Scan for unused imports, dead code paths, orphan console.log statements | ✅ |
+| **F4** | Standardize error handling | Consistent pattern: log to console via logger, show user-friendly toast for actionable errors | ✅ |
+| **F5** | Component audit | Can any screen's inline sub-UI be cleanly extracted into a reusable component? | ✅ |
 
 ---
 
@@ -186,10 +186,10 @@ This is also a "debt" sprint — performance optimization, accessibility, and co
 
 - [x] Dark mode applies to all screens and adapts instantly on toggle
 - [x] Theme preference persists across app restarts
-- [ ] Android widget shows live data and quick-log works from widget
+- [x] Android widget shows live data and quick-log works from widget
 - [x] Health Connect writes are visible in Google Fit / Health Connect app
 - [x] Share card generates as a clean image
-- [ ] Quick-log is debounced (no double-logs)
-- [ ] FlatList scrolls smoothly with no jank on 500+ log entries
-- [ ] All interactive elements have accessibility labels
-- [ ] App launches without warnings about unused imports or missing keys
+- [x] Quick-log is debounced (no double-logs)
+- [x] FlatList scrolls smoothly with no jank on 500+ log entries
+- [x] All interactive elements have accessibility labels
+- [x] App launches without warnings about unused imports or missing keys
