@@ -52,6 +52,7 @@ export default function SettingsScreen() {
 
   const [settings, setSettings] = useState(null);
   const [mascotExpression, setMascotExpression] = useState("happy");
+  const [mascotVariant, setMascotVariant] = useState("classic");
   const [mascotMessage, setMascotMessage] = useState(null);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const [weightText, setWeightText] = useState("");
@@ -86,6 +87,7 @@ export default function SettingsScreen() {
     setSettings(s);
     setUnlockedAchievements(unlocked);
     if (s.weightKg) setWeightText(String(s.weightKg));
+    setMascotVariant(s.mascotVariant || "classic");
 
     try {
       const logs = await getLogs();
@@ -153,7 +155,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={s.container}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <View style={s.header}>
-          <Mascot size={80} expression={mascotExpression} onPress={cycleExpression} message={mascotMessage} />
+          <Mascot size={80} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
           <Text style={s.title}>Settings</Text>
         </View>
 
@@ -476,11 +478,11 @@ export default function SettingsScreen() {
                   const response = await fetch(file.uri);
                   const jsonString = await response.text();
                   const summary = await importFromJSON(jsonString);
-                  Alert.alert(
-                    "Restored!",
-                    `Imported ${summary.logs} log entries.\n${summary.hasSettings ? "Settings restored\n" : ""}${summary.hasAchievements ? "Achievements restored" : ""}`,
-                    [{ text: "Great!" }]
-                  );
+                  let msg = `Imported ${summary.logs} log entr${summary.logs === 1 ? "y" : "ies"}.\n`;
+                  if (summary.hasSettings) msg += "Settings restored.\n";
+                  if (summary.hasAchievements) msg += "Achievements restored.\n";
+                  if (summary.warnings) msg += `\n⚠️ ${summary.warnings.join("\n")}`;
+                  Alert.alert("Restored!", msg.trim(), [{ text: "Great!" }]);
                   await loadSettings();
                 } catch (e) {
                   Alert.alert("Import Failed", e.message || "Could not read backup file");

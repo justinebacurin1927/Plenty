@@ -1,0 +1,4 @@
+# Team-level overrides for bmad-generate-project-context (committed)
+
+[workflow]
+output_path = "{project-root}/docs/project-context.md"

@@ -1,0 +1,110 @@
+# generated: 2026-07-18
+# last_updated: 2026-07-18
+# project: Plenty
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: docs/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+
+generated: 2026-07-18
+last_updated: 2026-07-18
+project: Plenty
+project_key: NOKEY
+tracking_system: file-system
+story_location: docs/implementation-artifacts
+
+development_status:
+  # Epic 1 — Bug Fixes & Foundations
+  epic-1: done
+  1-1-fix-interval-persistence: done
+  1-2-fix-notification-dedup: done
+  1-3-purge-health-connect: done
+  1-4-edge-case-sweep: done
+  epic-1-retrospective: done
+
+  # Epic 2 — Streak System
+  epic-2: in-progress
+  2-1-streak-engine: done
+  2-2-heatmap: done
+  2-3-rewards-ladder: done
+  2-4-streak-freeze: done
+  2-5-streak-flame: done
+  2-6-streak-on-widget: done
+  2-7-streak-aware-notifications: done
+  epic-2-retrospective: optional
+
+  # Epic 3 — Water Animation
+  epic-3: in-progress
+  3-1-water-fill-component: done
+  3-2-water-fill-ripple: done
+  3-3-count-up-numbers: backlog
+  3-4-goal-reached-moment: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4 — Onboarding
+  epic-4: done
+  4-1-first-run-detection: done
+  4-2-onboarding-screen: done
+  epic-4-retrospective: optional
+
+  # Epic 5 — Quality Foundation
+  epic-5: done
+  5-1-test-infrastructure: done
+  5-2-regression-tests: done
+  5-3-notification-reliability: done
+  epic-5-retrospective: optional
+
+  # Epic 6 — Mascot & Micro-interactions
+  epic-6: backlog
+  6-1-mascot-idle-animation: backlog
+  6-2-press-feedback-haptics: backlog
+  6-3-screen-transitions-toast: backlog
+  6-4-weekly-chart-entrance: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7 — Design System
+  epic-7: backlog
+  7-1-type-spacing-tokens: backlog
+  7-2-structural-color-tokens: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8 — Play Store Launch
+  epic-8: backlog
+  8-1-store-listing-assets: backlog
+  8-2-privacy-policy: backlog
+  8-3-production-build-staged-rollout: backlog
+  epic-8-retrospective: optional

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plenty Home — Layout Mock</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #E8F4FD;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #E8F4FD;
+    border-radius: 44px;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.05), 0 20px 60px rgba(0,0,0,0.12);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Status bar */
+  .status-bar {
+    padding: 14px 24px 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1A3A5C;
+    flex-shrink: 0;
+  }
+  .notch { text-align: center; }
+  .battery { display: flex; gap: 4px; align-items: center; }
+
+  /* Weather banner */
+  .weather-banner {
+    margin: 8px 16px 0;
+    background: #F0A050;
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: white;
+    font-weight: 500;
+    flex-shrink: 0;
+    animation: slideIn 0.4s ease-out;
+  }
+  .weather-banner .icon { font-size: 18px; }
+  .weather-banner .dismiss {
+    margin-left: auto;
+    opacity: 0.7;
+    cursor: default;
+    font-size: 16px;
+  }
+  @keyframes slideIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  /* Content area — scrollable */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Mascot hero */
+  .mascot-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0 8px;
+    position: relative;
+  }
+
+  /* Speech bubble */
+  .speech-bubble {
+    background: white;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-family: 'Nunito', 'Fredoka', -apple-system, sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: #1A3A5C;
+    max-width: 260px;
+    text-align: center;
+    position: relative;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid white;
+  }
+
+  /* Mascot */
+  .mascot {
+    width: 100px;
+    height: 120px;
+    position: relative;
+    animation: float 2s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  /* SVG mascot — classic droplet with stubby limbs */
+  .mascot-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Progress section */
+  .progress-section {
+    text-align: center;
+    padding: 4px 0;
+  }
+  .progress-bar-track {
+    width: 100%;
+    height: 12px;
+    background: #A0C4E8;
+    border-radius: 9999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    width: 50%;
+    background: #4A90D9;
+    border-radius: 9999px;
+    transition: width 0.6s ease-out;
+  }
+  .goal-text {
+    margin-top: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #4A6A85;
+  }
+
+  /* Quick-log button */
+  .quick-log {
+    width: 100%;
+    height: 56px;
+    background: #4A90D9;
+    border-radius: 12px;
+    border: none;
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: default;
+    transition: transform 0.15s;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .quick-log:active {
+    transform: scale(0.96);
+  }
+  .quick-log .icon { font-size: 20px; }
+
+  /* Reminder controls */
+  .reminder-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 4px;
+  }
+  .reminder-interval {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #6B8CAB;
+    font-weight: 500;
+  }
+  .reminder-interval .value {
+    color: #1A3A5C;
+    font-weight: 600;
+  }
+  .toggle-switch {
+    width: 48px;
+    height: 28px;
+    background: #A0C4E8;
+    border-radius: 14px;
+    position: relative;
+    cursor: default;
+    transition: background 0.2s;
+  }
+  .toggle-switch.on {
+    background: #4A90D9;
+  }
+  .toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+  }
+  .toggle-switch.on .toggle-thumb {
+    transform: translateX(20px);
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    height: 64px;
+    background: white;
+    border-top: 1px solid #E8F0FE;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    flex-shrink: 0;
+    padding: 0 8px;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    color: #B8D0E8;
+    font-weight: 500;
+    padding: 4px 16px;
+    cursor: default;
+  }
+  .tab-item.active {
+    color: #4A90D9;
+  }
+  .tab-item .tab-icon { font-size: 22px; }
+  .tab-item .tab-label { font-size: 10px; }
+
+  /* Permission banner */
+  .permission-banner {
+    background: #FFF3E0;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #8D6E00;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Label overlay */
+  .layout-label {
+    position: absolute;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6B8CAB;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* Notifications: actually making a good mascot SVG now */
+  .droplet-body {
+    fill: #4A90D9;
+  }
+  .droplet-highlight {
+    fill: rgba(255,255,255,0.25);
+  }
+  .eye {
+    fill: #1A3A5C;
+  }
+  .mouth-normal {
+    stroke: #1A3A5C;
+    stroke-width: 1.5;
+    fill: none;
+    stroke-linecap: round;
+  }
+  .mouth-happy {
+    fill: #1A3A5C;
+  }
+  .blush {
+    fill: rgba(234, 89, 110, 0.25);
+  }
+  .limb {
+    stroke: #3A7AC9;
+    stroke-width: 3;
+    stroke-linecap: round;
+    fill: none;
+  }
+  /* Hot effects */
+  .sweat-drop {
+    fill: #6BB5FF;
+    opacity: 0.8;
+    animation: drop 1.5s ease-in-out infinite;
+  }
+  .sweat-drop:nth-child(2) { animation-delay: 0.5s; }
+  .sweat-drop:nth-child(3) { animation-delay: 1s; }
+  @keyframes drop {
+    0%, 100% { opacity: 0; transform: translateY(0); }
+    50% { opacity: 0.8; transform: translateY(4px); }
+  }
+
+  .heat-lines { stroke: #F0A050; stroke-width: 1.5; stroke-linecap: round; fill: none; opacity: 0.5; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <span class="notch"></span>
+    <span class="battery">📶 🔋</span>
+  </div>
+
+  <!-- Weather banner -->
+  <div class="weather-banner">
+    <span class="icon">☀️</span>
+    <span>34°C — Hot one today! Drink extra water.</span>
+    <span class="dismiss">✕</span>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="content">
+    <!-- Mascot hero -->
+    <div class="mascot-hero">
+      <div class="speech-bubble">
+        Phew! Grab a cold one 🧊
+      </div>
+      <div class="mascot">
+        <svg class="mascot-svg" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+          <!-- Sweat drops (hot weather) -->
+          <ellipse class="sweat-drop" cx="18" cy="30" rx="3" ry="4"/>
+          <ellipse class="sweat-drop" cx="82" cy="25" rx="3" ry="4"/>
+          <ellipse class="sweat-drop" cx="15" cy="45" rx="2.5" ry="3.5"/>
+
+          <!-- Heat lines -->
+          <line class="heat-lines" x1="82" y1="18" x2="92" y2="12"/>
+          <line class="heat-lines" x1="85" y1="8" x2="95" y2="2"/>
+
+          <!-- Left leg -->
+          <path class="limb" d="M 40 102 Q 35 112 28 114"/>
+          <!-- Right leg -->
+          <path class="limb" d="M 60 102 Q 65 112 72 114"/>
+          <!-- Left arm -->
+          <path class="limb" d="M 20 60 Q 8 57 6 48"/>
+          <!-- Right arm (fanning) -->
+          <path class="limb" d="M 80 60 Q 92 50 90 38" style="animation: wave 1s ease-in-out infinite;"/>
+          @keyframes wave {
+            0%, 100% { transform: rotate(0deg); transform-origin: 80px 60px; }
+            50% { transform: rotate(-8deg); transform-origin: 80px 60px; }
+          }
+
+          <!-- Droplet body -->
+          <path class="droplet-body" d="M 50 12 C 30 40 22 58 22 74 C 22 92 34 104 50 104 C 66 104 78 92 78 74 C 78 58 70 40 50 12 Z"/>
+
+          <!-- Highlight -->
+          <ellipse class="droplet-highlight" cx="36" cy="48" rx="8" ry="14" transform="rotate(-15 36 48)"/>
+
+          <!-- Eyes -->
+          <ellipse class="eye" cx="38" cy="62" rx="4" ry="5"/>
+          <ellipse class="eye" cx="62" cy="62" rx="4" ry="5"/>
+
+          <!-- Blush -->
+          <ellipse class="blush" cx="26" cy="72" rx="7" ry="4"/>
+          <ellipse class="blush" cx="74" cy="72" rx="7" ry="4"/>
+
+          <!-- Tongue out (hot expression) -->
+          <ellipse class="mouth-happy" cx="50" cy="80" rx="5" ry="4"/>
+          <ellipse style="fill: #E8596E;" cx="50" cy="83" rx="3" ry="4"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Progress section -->
+    <div class="progress-section">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" style="width: 50%"></div>
+      </div>
+      <div class="goal-text">4/8 glasses</div>
+    </div>
+
+    <!-- Quick-log button -->
+    <div class="quick-log">
+      <span class="icon">💧</span>
+      <span>+250ml</span>
+    </div>
+
+    <!-- Reminder controls -->
+    <div class="reminder-controls">
+      <div class="reminder-interval">
+        <span>⏰</span>
+        <span>Every <span class="value">30 min</span></span>
+      </div>
+      <div class="toggle-switch on">
+        <div class="toggle-thumb"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <div class="tab-item active">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-label">Home</span>
+    </div>
+    <div class="tab-item">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">Log</span>
+    </div>
+    <div class="tab-item">
+      <span class="tab-icon">🏆</span>
+      <span class="tab-label">Achievements</span>
+    </div>
+    <div class="tab-item">
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-label">Settings</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

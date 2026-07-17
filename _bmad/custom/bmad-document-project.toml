@@ -1,0 +1,4 @@
+# Team-level overrides for bmad-document-project (committed)
+
+[workflow]
+output_path = "{project_knowledge}/project-docs"

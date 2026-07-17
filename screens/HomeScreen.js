@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -6,16 +6,18 @@ import {
   TextInput,
   Alert,
   Modal,
+  Linking,
   StyleSheet,
   SafeAreaView,
   ScrollView,
   Vibration,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Mascot, { getRandomMessage, streakToExpression } from "../components/Mascot";
 import AchievementPopup from "../components/AchievementPopup";
 import WeatherBanner from "../components/WeatherBanner";
-import { getTodayLogs, addLog, getSettings, getStreak, getLogs } from "../utils/storage";
+import { getTodayLogs, addLog, getSettings, getStreak, getLogs, saveSettings, checkMissedDay, useFreeze } from "../utils/storage";
 import { checkAchievements } from "../utils/achievements";
 import { getPeakHoursSummary } from "../utils/patterns";
 import {
@@ -24,11 +26,15 @@ import {
   cancelAllReminders,
   getScheduledReminders,
   getEscalationTier,
+  scheduleMilestoneCelebration,
 } from "../utils/notifications";
 import { useTheme } from "../context/ThemeContext";
 import { refreshWidget } from "../utils/widget";
 import { ShareCardForwardRef } from "../components/ShareCard";
 import { captureAndShare } from "../utils/share";
+import Heatmap from "../components/Heatmap";
+import StreakFlame from "../components/StreakFlame";
+import WaterFill from "../components/WaterFill";
 
 const PRESET_MINUTES = [1, 5, 15, 30, 60, 120];
 
@@ -79,9 +85,12 @@ export default function HomeScreen({ navigation }) {
   const [weatherLon, setWeatherLon] = useState(null);
   const [goalSuggestion, setGoalSuggestion] = useState(null);
   const [activityEnabled, setActivityEnabled] = useState(false);
+  const [freezePrompt, setFreezePrompt] = useState(null);
   const streakCardRef = React.useRef(null);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
   const lastLogRef = React.useRef(0);
+  const waterFillRef = useRef(null);
+  const [waterWidth, setWaterWidth] = useState(Dimensions.get("window").width - 48);
 
   // Load everything on mount
   useEffect(() => {
@@ -100,6 +109,11 @@ export default function HomeScreen({ navigation }) {
     setDailyGoal(settings.dailyGoal);
     setDrinkAmount(settings.drinkAmount);
     setActivityEnabled(settings.activityAdjustment || false);
+    const savedIntervalSec = Math.round((settings.intervalMinutes || 30) * 60);
+    setSelectedInterval(savedIntervalSec);
+    setCustomText(
+      PRESET_MINUTES.includes(savedIntervalSec / 60) ? "" : formatInterval(savedIntervalSec)
+    );
     const logs = await getTodayLogs();
     const totalMl = logs.reduce((sum, entry) => sum + (entry.amount || 250), 0);
     setTodayCount(logs.length);
@@ -168,7 +182,34 @@ export default function HomeScreen({ navigation }) {
       streak: strk,
       glassesCount: Math.round(totalMl / 250),
     }).catch(() => {});
+
+    // Check for missed day → freeze prompt
+    try {
+      const missed = await checkMissedDay();
+      if (missed.missed && missed.freezesAvailable > 0) {
+        setFreezePrompt(missed);
+      } else {
+        setFreezePrompt(null);
+      }
+    } catch (e) {
+      // Silently ignore
+    }
   };
+
+  const handleUseFreeze = async () => {
+    if (!freezePrompt?.dateStr) return;
+    const ok = await useFreeze(freezePrompt.dateStr);
+    if (ok) {
+      setFreezePrompt(null);
+      // Refresh to update the streak display
+      await loadData();
+    }
+  };
+
+  const handleWaterLayout = useCallback((e) => {
+    const w = e.nativeEvent.layout.width;
+    setWaterWidth((prev) => (prev === w ? prev : w));
+  }, []);
 
   useEffect(() => {
     const unsub = navigation?.addListener("focus", loadData);
@@ -191,6 +232,7 @@ export default function HomeScreen({ navigation }) {
         return;
       }
       console.log(`Scheduling reminders every ${formatInterval(selectedInterval)}`);
+      await saveSettings({ intervalMinutes: selectedInterval / 60, remindersActive: true });
       const settings = await getSettings();
       await scheduleWaterReminder(selectedInterval, {
         enabled: settings.quietHoursEnabled,
@@ -209,6 +251,7 @@ export default function HomeScreen({ navigation }) {
     try {
       console.log("Stopping all reminders");
       await cancelAllReminders();
+      await saveSettings({ remindersActive: false });
       setIsActive(false);
       console.log("All reminders cancelled");
     } catch (e) {
@@ -249,6 +292,12 @@ export default function HomeScreen({ navigation }) {
         glassesCount: Math.round((todayMl + amount) / 250),
       }).catch(() => {});
 
+      // Check for streak milestone celebration (fire-and-forget — internal error handling)
+      scheduleMilestoneCelebration();
+
+      // Trigger the water ripple animation
+      waterFillRef.current?.triggerRipple();
+
     },
     [todayMl, dailyGoal]
   );
@@ -256,13 +305,34 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     (async () => {
       try {
+        const settings = await getSettings();
         const reminders = await getScheduledReminders();
-        console.log(
-          reminders.length > 0
-            ? `Found ${reminders.length} active reminder(s) on app start`
-            : "No active reminders on app start"
-        );
-        if (reminders.length > 0) setIsActive(true);
+
+        if (settings.remindersActive && reminders.length === 0) {
+          // Re-arm: reminders should be active but none found (app restart, reboot, or data loss)
+          console.log("Re-arming reminders on app start");
+          console.log(`Requesting notification permission...`);
+          const granted = await requestPermission();
+          setPermissionGranted(granted);
+          if (granted) {
+            await scheduleWaterReminder(settings.intervalMinutes * 60, {
+              enabled: settings.quietHoursEnabled,
+              start: settings.quietHoursStart,
+              end: settings.quietHoursEnd,
+            });
+            setIsActive(true);
+            console.log("Reminders re-armed successfully");
+          } else {
+            // Permission lost — update the persisted flag to match reality
+            await saveSettings({ remindersActive: false });
+            console.warn("Permission lost — reminders deactivated");
+          }
+        } else if (reminders.length > 0) {
+          setIsActive(true);
+          console.log(`Found ${reminders.length} active reminder(s) on app start`);
+        } else {
+          console.log("No active reminders on app start");
+        }
       } catch (e) {
         console.error("Failed to check reminders on mount:", e.message, e.stack);
       }
@@ -304,7 +374,7 @@ export default function HomeScreen({ navigation }) {
 
         {streak > 0 && (
           <View style={s.streakBadge}>
-            <Ionicons name="flame" size={18} color={colors.warning} />
+            <StreakFlame streakLength={streak} />
             <Text style={s.streakText}>{streak} day{streak > 1 ? "s" : ""}</Text>
             <TouchableOpacity
               style={s.shareStreakBtn}
@@ -361,8 +431,8 @@ export default function HomeScreen({ navigation }) {
           <Text style={s.progressLabel}>
             {glassesFromMl} / {dailyGoal} glasses
           </Text>
-          <View style={s.barBg}>
-            <View style={[s.barFill, { width: `${progressPct * 100}%` }]} />
+          <View style={s.waterContainer} onLayout={handleWaterLayout}>
+            <WaterFill ref={waterFillRef} fill={progressPct} width={waterWidth} height={200} />
           </View>
           {progressPct >= 1 && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}>
@@ -388,6 +458,47 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
+        {/* Freeze prompt */}
+        {freezePrompt && (
+          <Modal transparent animationType="fade" visible={!!freezePrompt}>
+            <View style={s.freezeOverlay}>
+              <View style={[s.freezeModal, { backgroundColor: colors.surface }]}>
+                <Text style={[s.freezeEmoji]}>❄️</Text>
+                <Text style={[s.freezeTitle, { color: colors.text }]}>
+                  Missed yesterday?
+                </Text>
+                <Text style={[s.freezeDesc, { color: colors.textSecondary }]}>
+                  Looks like you missed yesterday. Use a streak freeze to keep your {freezePrompt.currentStreak}-day streak alive?
+                </Text>
+                <Text style={[s.freezeCount, { color: colors.textTertiary }]}>
+                  {freezePrompt.freezesAvailable} remaining this month
+                </Text>
+                <View style={s.freezeActions}>
+                  <TouchableOpacity
+                    style={[s.freezeBtnPrimary, { backgroundColor: colors.primary }]}
+                    onPress={handleUseFreeze}
+                  >
+                    <Text style={s.freezeBtnPrimaryText}>Use Freeze</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={s.freezeBtnSkip}
+                    onPress={() => setFreezePrompt(null)}
+                  >
+                    <Text style={[s.freezeBtnSkipText, { color: colors.textSecondary }]}>
+                      Skip, break my streak
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        {/* Heatmap */}
+        <View style={[s.card, { backgroundColor: colors.surface }]}>
+          <Heatmap goalGlasses={dailyGoal} />
+        </View>
+
         <View style={s.section}>
           <Text style={s.sectionLabel}>Remind me every</Text>
           <View style={s.intervalRow}>
@@ -400,10 +511,15 @@ export default function HomeScreen({ navigation }) {
                     s.intervalChip,
                     selectedInterval === sec && !customText && s.intervalChipActive,
                   ]}
-                  onPress={() => {
+                  onPress={async () => {
                     setSelectedInterval(sec);
                     setCustomText("");
                     setIntervalError("");
+                    try {
+                      await saveSettings({ intervalMinutes: sec / 60 });
+                    } catch (e) {
+                      console.error("Failed to save interval:", e.message);
+                    }
                   }}
                 >
                   <Text
@@ -427,11 +543,18 @@ export default function HomeScreen({ navigation }) {
               autoCapitalize="none"
               autoCorrect={false}
               value={customText}
-              onChangeText={(t) => {
+              onChangeText={async (t) => {
                 setCustomText(t);
                 setIntervalError("");
                 const parsed = parseInterval(t);
-                if (parsed !== null) setSelectedInterval(parsed);
+                if (parsed !== null) {
+                  setSelectedInterval(parsed);
+                  try {
+                    await saveSettings({ intervalMinutes: parsed / 60 });
+                  } catch (e) {
+                    console.error("Failed to save interval:", e.message);
+                  }
+                }
               }}
             />
           </View>
@@ -472,9 +595,17 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
 
         {permissionGranted === false && (
-          <Text style={s.warning}>
-            Notifications not enabled. Enable them in Settings to receive reminders.
-          </Text>
+          <View style={s.warningBlock}>
+            <Text style={s.warning}>
+              Notifications not enabled. Enable them in Settings to receive reminders.
+            </Text>
+            <TouchableOpacity
+              style={s.settingsLink}
+              onPress={() => Linking.openURL("app-settings:")}
+            >
+              <Text style={s.settingsLinkText}>Open Settings</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
 
@@ -647,17 +778,12 @@ function makeStyles(colors) {
       marginTop: 4,
       marginBottom: 12,
     },
-    barBg: {
+    waterContainer: {
       width: "100%",
-      height: 12,
-      borderRadius: 6,
-      backgroundColor: colors.primaryBg,
+      height: 200,
+      borderRadius: 12,
       overflow: "hidden",
-    },
-    barFill: {
-      height: "100%",
-      borderRadius: 6,
-      backgroundColor: colors.primary,
+      marginTop: 12,
     },
     goalMet: {
       fontSize: 15,
@@ -696,6 +822,15 @@ function makeStyles(colors) {
       fontWeight: "600",
       color: colors.goalSuggestionText,
       flex: 1,
+    },
+    card: {
+      borderRadius: 16,
+      paddingVertical: 6,
+      paddingHorizontal: 6,
+      marginTop: 16,
+      width: "100%",
+      maxWidth: 360,
+      alignItems: "center",
     },
     section: {
       marginTop: 28,
@@ -791,12 +926,27 @@ function makeStyles(colors) {
       fontWeight: "600",
       color: colors.primary,
     },
+    warningBlock: {
+      alignItems: "center",
+      marginTop: 16,
+      paddingHorizontal: 20,
+    },
     warning: {
       color: colors.error,
       fontSize: 13,
       textAlign: "center",
-      marginTop: 16,
+    },
+    settingsLink: {
+      marginTop: 8,
+      paddingVertical: 8,
       paddingHorizontal: 20,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+    },
+    settingsLinkText: {
+      color: "#fff",
+      fontWeight: "600",
+      fontSize: 13,
     },
     modalOverlay: {
       flex: 1,
@@ -841,6 +991,64 @@ function makeStyles(colors) {
       fontSize: 16,
       color: colors.textSecondary,
       fontWeight: "600",
+    },
+
+    // ── Freeze prompt ──
+    freezeOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 32,
+    },
+    freezeModal: {
+      borderRadius: 20,
+      padding: 28,
+      alignItems: "center",
+      maxWidth: 340,
+      width: "100%",
+    },
+    freezeEmoji: {
+      fontSize: 42,
+      marginBottom: 12,
+    },
+    freezeTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      marginBottom: 8,
+      textAlign: "center",
+    },
+    freezeDesc: {
+      fontSize: 15,
+      textAlign: "center",
+      lineHeight: 22,
+      marginBottom: 8,
+    },
+    freezeCount: {
+      fontSize: 13,
+      marginBottom: 20,
+    },
+    freezeActions: {
+      width: "100%",
+      gap: 8,
+    },
+    freezeBtnPrimary: {
+      paddingVertical: 14,
+      borderRadius: 14,
+      alignItems: "center",
+    },
+    freezeBtnPrimaryText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    freezeBtnSkip: {
+      alignItems: "center",
+      paddingVertical: 10,
+    },
+    freezeBtnSkipText: {
+      fontSize: 14,
+      fontWeight: "500",
     },
   });
 }

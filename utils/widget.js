@@ -1,6 +1,16 @@
 import { NativeModules, Platform } from "react-native";
 
-const { PlentyWidget } = NativeModules;
+/**
+ * Format streak number for widget display.
+ * Returns "Start tracking!" when streak is 0 or invalid,
+ * or "{n} day streak" when streak is active.
+ */
+export function formatWidgetStreak(streak) {
+  if (!streak || typeof streak !== "number" || streak < 1) {
+    return "Start tracking!";
+  }
+  return `${streak} day streak`;
+}
 
 /**
  * Update the home screen widget with current hydration data.
@@ -8,16 +18,16 @@ const { PlentyWidget } = NativeModules;
  * (Expo Go, older build, or iOS).
  */
 export async function refreshWidget({ currentMl, goalMl, streak, glassesCount }) {
-  if (Platform.OS !== "android" || !PlentyWidget) {
+  if (Platform.OS !== "android" || !NativeModules.PlentyWidget) {
     return false;
   }
 
   try {
-    await PlentyWidget.refreshWidget({
-      currentMl: Math.round(currentMl),
-      goalMl: Math.round(goalMl),
-      streak: Math.round(streak),
-      glassesCount: Math.round(glassesCount),
+    await NativeModules.PlentyWidget.refreshWidget({
+      currentMl: Math.round(currentMl || 0),
+      goalMl: Math.round(goalMl || 0),
+      streak: Math.round(streak || 0),
+      glassesCount: Math.round(glassesCount || 0),
     });
     return true;
   } catch (e) {

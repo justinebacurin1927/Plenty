@@ -1,0 +1,17 @@
+# _bmad/config.toml — BMad Method core configuration
+# Installer-owned. Edit via _bmad/custom/config.toml or config.user.toml.
+
+[core]
+user_name = "Jaycee"
+project_name = "Plenty"
+communication_language = "en"
+document_output_language = "en"
+output_folder = "docs"
+
+[agents]
+default_selected = true
+
+[bmm]
+planning_artifacts = "{output_folder}/planning-artifacts"
+implementation_artifacts = "{output_folder}/implementation-artifacts"
+project_knowledge = "{output_folder}"

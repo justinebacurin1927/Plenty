@@ -1,0 +1,4 @@
+# Team-level overrides for bmad-retrospective (committed)
+
+[workflow]
+output_path = "{implementation_artifacts}/retrospectives"

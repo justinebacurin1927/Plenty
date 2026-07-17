@@ -69,8 +69,13 @@ export default function LogScreen() {
   );
 
   const formatTime = (iso) => {
-    const d = new Date(iso);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return "--:--";
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch {
+      return "--:--";
+    }
   };
 
   const maxTotal = useMemo(
@@ -81,16 +86,19 @@ export default function LogScreen() {
   const ITEM_HEIGHT = 58;
 
   const renderLogItem = useCallback(
-    ({ item, index }) => (
-      <View style={s.logItem}>
-        <View style={s.logLeft}>
-          <Text style={s.logIndex}>#{logs.length - index}</Text>
-          <Ionicons name="water" size={20} color={colors.primary} />
-          <Text style={s.logAmount}>{item.amount || 250} ml</Text>
+    ({ item, index }) => {
+      if (!item || !item.timestamp) return null;
+      return (
+        <View style={s.logItem}>
+          <View style={s.logLeft}>
+            <Text style={s.logIndex}>#{logs.length - index}</Text>
+            <Ionicons name="water" size={20} color={colors.primary} />
+            <Text style={s.logAmount}>{item.amount || 250} ml</Text>
+          </View>
+          <Text style={s.logTime}>{formatTime(item.timestamp)}</Text>
         </View>
-        <Text style={s.logTime}>{formatTime(item.timestamp)}</Text>
-      </View>
-    ),
+      );
+    },
     [colors, logs.length]
   );
 
@@ -167,7 +175,7 @@ export default function LogScreen() {
       ) : (
         <FlatList
           data={logs}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => item?.id ?? String(index)}
           contentContainerStyle={s.list}
           style={{ flex: 1 }}
           ListHeaderComponent={headerComponent}
@@ -179,6 +187,7 @@ export default function LogScreen() {
           })}
           windowSize={7}
           maxToRenderPerBatch={15}
+          removeClippedSubviews={true}
         />
       )}
     </SafeAreaView>

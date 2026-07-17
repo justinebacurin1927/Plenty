@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { getOnboarded } from "./utils/storage";
 
 // ═══ Logger — captures console.log/warn/error from boot ═══
 import "./utils/logger";
@@ -11,9 +12,14 @@ import "./utils/logger";
 // ═══ Theme ═══
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 
-// ═══ Notification response handler (snooze / quick-log) ═══
-import { setupResponseHandler } from "./utils/notifications";
-setupResponseHandler();
+// ═══ Notification init + response handler (snooze / quick-log) ═══
+import { initNotifications, setupResponseHandler } from "./utils/notifications";
+initNotifications().catch(() => {});
+try {
+  setupResponseHandler();
+} catch (e) {
+  console.log("ℹ️ Notification handler not available in this environment");
+}
 
 // ═══ Capture original console AFTER logger installs its override ═══
 const _origConsoleError = console.error.bind(console);
@@ -43,6 +49,7 @@ import HomeScreen from "./screens/HomeScreen";
 import LogScreen from "./screens/LogScreen";
 import AchievementsScreen from "./screens/AchievementsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
+import OnboardingScreen from "./screens/OnboardingScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -91,6 +98,31 @@ function AppNavigator() {
 }
 
 export default function App() {
+  const [onboarded, setOnboarded] = useState(null); // null = loading
+
+  useEffect(() => {
+    getOnboarded().then(setOnboarded);
+  }, []);
+
+  const handleOnboardingComplete = () => {
+    setOnboarded(true);
+  };
+
+  if (onboarded === null) {
+    // Loading state — keep splash visible
+    return null;
+  }
+
+  if (!onboarded) {
+    return (
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <OnboardingScreen onComplete={handleOnboardingComplete} />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <ErrorBoundary>

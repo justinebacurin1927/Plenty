@@ -1,0 +1,6 @@
+# BMad personal overrides — user-specific, never committed
+config.user.toml
+custom/config.user.toml
+custom/*.user.toml
+bmm/config.user.yaml
+core/config.user.yaml

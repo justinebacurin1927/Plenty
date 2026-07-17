@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
@@ -55,17 +55,22 @@ export default function Mascot({
   message = null,
   style,
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const dropSide = size * 0.62;
   const f = dropSide / 100;
   const bounceAnim = useRef(new Animated.Value(0)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const blinkAnim = useRef(new Animated.Value(0)).current;
+  const [isBlinking, setIsBlinking] = useState(false);
+  const blinkTimerRef = useRef(null);
+  const waveAnim = useRef(new Animated.Value(0)).current;
 
   const COLORS = {
-    drop: variant === "super" ? "#9B59B6" : "#4A90D9",
-    face: "#1A3A5C",
-    blush: "rgba(255, 130, 130, 0.3)",
-    highlight: "rgba(255, 255, 255, 0.35)",
-    lensBorder: "#2C3E50",
+    drop: variant === "super" ? "#9B59B6" : colors.primary,
+    face: colors.text,
+    blush: isDark ? "rgba(255, 130, 130, 0.15)" : "rgba(255, 130, 130, 0.3)",
+    highlight: isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.35)",
+    lensBorder: colors.textSecondary,
   };
 
   useEffect(() => {
@@ -86,16 +91,77 @@ export default function Mascot({
     return () => sequence.stop();
   }, [celebration]);
 
+  // ── Idle float (gentle 6px bob, 2s cycle) ──
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  // ── Blink cycle (every 4-6s) ──
+  useEffect(() => {
+    const scheduleBlink = () => {
+      const delay = 4000 + Math.random() * 2000;
+      return setTimeout(() => {
+        setIsBlinking(true);
+        Animated.sequence([
+          Animated.timing(blinkAnim, { toValue: 1, duration: 60, useNativeDriver: true }),
+          Animated.timing(blinkAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
+        ]).start(() => {
+          setIsBlinking(false);
+          blinkTimerRef.current = scheduleBlink();
+        });
+      }, delay);
+    };
+    blinkTimerRef.current = scheduleBlink();
+    return () => {
+      if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
+    };
+  }, []);
+
+  // ── Arm wave (gentle back-and-forth) ──
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(waveAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(waveAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
   const bounce = bounceAnim.interpolate({
     inputRange: [-1, 0, 1],
     outputRange: [-8, 0, -8],
   });
 
+  const floatOffset = floatAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -6],
+  });
+
+  const waveRotation = waveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["-8deg", "8deg"],
+  });
+
+  // Combine float (idle) and bounce (celebration) — celebration overrides
+  const translateY = useMemo(
+    () => (celebration ? bounce : floatOffset),
+    [celebration]
+  );
+
   const content = (
     <Animated.View
       style={[
         styles.wrapper,
-        { width: size, height: size * 1.05, transform: [{ translateY: celebration ? bounce : 0 }] },
+        { width: size, height: size * 1.05, transform: [{ translateY }] },
         style,
       ]}
     >
@@ -138,9 +204,9 @@ export default function Mascot({
           />
 
           <View style={styles.eyesRow}>
-            <Eye type={eyeType(expression, "left")} size={5.5 * f} faceColor={COLORS.face} />
+            <Eye type={eyeType(expression, "left")} size={5.5 * f} faceColor={COLORS.face} blinking={isBlinking} />
             <View style={{ width: 10 * f }} />
-            <Eye type={eyeType(expression, "right")} size={5.5 * f} faceColor={COLORS.face} />
+            <Eye type={eyeType(expression, "right")} size={5.5 * f} faceColor={COLORS.face} blinking={isBlinking} />
           </View>
 
           <Mouth expression={expression} size={12 * f} faceColor={COLORS.face} />
@@ -151,6 +217,41 @@ export default function Mascot({
           </View>
         </View>
       </View>
+
+      {/* ── Limbs ── */}
+      <View style={[styles.armLeft, {
+        width: dropSide * 0.2,
+        height: dropSide * 0.09,
+        borderRadius: dropSide * 0.045,
+        backgroundColor: COLORS.drop,
+        top: size * 0.37,
+        left: -(dropSide * 0.08),
+      }]} />
+      <Animated.View style={[styles.armRight, {
+        width: dropSide * 0.2,
+        height: dropSide * 0.09,
+        borderRadius: dropSide * 0.045,
+        backgroundColor: COLORS.drop,
+        top: size * 0.37,
+        right: -(dropSide * 0.08),
+        transform: [{ rotate: waveRotation }],
+      }]} />
+      {variant !== "super" && (
+        <View style={[styles.legs, { top: size * 0.86 }]}>
+          <View style={[styles.leg, {
+            width: dropSide * 0.1,
+            height: dropSide * 0.14,
+            borderRadius: dropSide * 0.05,
+            backgroundColor: COLORS.drop,
+          }]} />
+          <View style={[styles.leg, {
+            width: dropSide * 0.1,
+            height: dropSide * 0.14,
+            borderRadius: dropSide * 0.05,
+            backgroundColor: COLORS.drop,
+          }]} />
+        </View>
+      )}
 
       <Accessory variant={variant} size={dropSide} />
     </Animated.View>
@@ -202,7 +303,10 @@ function Accessory({ variant, size }) {
   return null;
 }
 
-function Eye({ type, size, faceColor }) {
+function Eye({ type, size, faceColor, blinking }) {
+  if (blinking) {
+    return <View style={{ width: size * 1.1, height: 1.5, borderRadius: 1, backgroundColor: faceColor }} />;
+  }
   const half = size / 2;
   if (type === "circle") {
     return <View style={{ width: size, height: size, borderRadius: half, backgroundColor: faceColor }} />;
@@ -288,4 +392,17 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent", borderRightColor: "transparent",
     marginTop: -1,
   },
+  armLeft: { position: "absolute", zIndex: 3 },
+  armRight: { position: "absolute", zIndex: 3 },
+  legs: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    zIndex: 3,
+  },
+  leg: {},
 });

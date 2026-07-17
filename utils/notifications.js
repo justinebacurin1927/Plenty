@@ -1,18 +1,34 @@
-import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { pickMessage } from "./messages";
-import { getSettings, getTodayLogs, getLastLogTime, saveSettings, addLog, incrementAchievementProgress } from "./storage";
+import { pickMessage, pickMilestoneMessage } from "./messages";
+import { getSettings, getTodayLogs, getLastLogTime, saveSettings, addLog, incrementAchievementProgress, getStreakData, getCelebratedMilestones, saveCelebratedMilestone } from "./storage";
 import { getCachedWeather, getHeatAdjustedInterval } from "./weather";
+
+// ─── Lazy import: expo-notifications crashes Expo Go on import ────────
+let _Notifications = null;
+
+async function getN() {
+  if (!_Notifications) {
+    _Notifications = await import("expo-notifications");
+  }
+  return _Notifications;
+}
 
 // ─── Foreground notification handler ─────────────────
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+export async function initNotifications() {
+  try {
+    const N = await getN();
+    N.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+  } catch (e) {
+    console.log("ℹ️ Notifications not available in this environment");
+  }
+}
 
 // ─── Helpers ─────────────────────────────────────────
 
@@ -59,17 +75,19 @@ export async function getEscalationTier() {
 async function ensureChannels() {
   if (Platform.OS !== "android") return;
 
-  await Notifications.setNotificationChannelAsync("water-reminder", {
+  const N = await getN();
+
+  await N.setNotificationChannelAsync("water-reminder", {
     name: "Water Reminder",
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: N.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     sound: "default",
   });
 
   // C5: Escalation channel — stronger vibration for alert tier
-  await Notifications.setNotificationChannelAsync("water-reminder-escalation", {
+  await N.setNotificationChannelAsync("water-reminder-escalation", {
     name: "Water Reminder (Urgent)",
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: N.AndroidImportance.HIGH,
     vibrationPattern: [0, 500, 200, 500, 200, 500, 200, 500],
     sound: "default",
   });
@@ -79,7 +97,8 @@ async function ensureChannels() {
 
 export async function setupNotificationCategories() {
   try {
-    await Notifications.setNotificationCategoryAsync("water-reminder", [
+    const N = await getN();
+    await N.setNotificationCategoryAsync("water-reminder", [
       {
         identifier: "drink",
         buttonTitle: "I drank!",
@@ -105,26 +124,31 @@ export function setupResponseHandler() {
   if (_responseHandlerSetup) return;
   _responseHandlerSetup = true;
 
-  Notifications.addNotificationResponseReceivedListener(async (response) => {
-    const { actionIdentifier, notification } = response;
+  getN().then((N) => {
+    N.addNotificationResponseReceivedListener(async (response) => {
+      const { actionIdentifier, notification } = response;
 
-    try {
-      if (actionIdentifier === "snooze") {
-        await handleSnooze();
-      } else if (actionIdentifier === "drink") {
-        await handleQuickLog(notification);
+      try {
+        if (actionIdentifier === "snooze") {
+          await handleSnooze();
+        } else if (actionIdentifier === "drink") {
+          await handleQuickLog(notification);
+        }
+      } catch (e) {
+        console.error("Notification response handler error:", e.message);
       }
-    } catch (e) {
-      console.error("Notification response handler error:", e.message);
-    }
+    });
+  }).catch((e) => {
+    console.log("ℹ️ Notification response handler not available:", e.message);
   });
 }
 
 async function handleSnooze() {
+  const N = await getN();
   console.log("Snoozing reminders for 15 minutes");
   await cancelAllReminders();
 
-  await Notifications.scheduleNotificationAsync({
+  await N.scheduleNotificationAsync({
     content: {
       title: "Time to drink water!",
       body: "Snoozed reminder — time to hydrate!",
@@ -151,7 +175,7 @@ async function handleQuickLog(notification) {
     const elapsed = Date.now() - deliveredAt;
     if (elapsed < 60000) {
       await incrementAchievementProgress("speed_demon");
-      console.log("Speed Demon progress +1 (responded in ${Math.round(elapsed / 1000)}s)");
+      console.log(`Speed Demon progress +1 (responded in ${Math.round(elapsed / 1000)}s)`);
     }
   }
 
@@ -166,7 +190,8 @@ async function handleQuickLog(notification) {
 
 // ─── Escalation-Aware Message Builder ─────────────────
 
-function buildEscalationContent(tier, message) {
+async function buildEscalationContent(tier, message) {
+  const N = await getN();
   const base = {
     title: "Time to drink water!",
     body: message.text,
@@ -191,10 +216,11 @@ function buildEscalationContent(tier, message) {
 
 export async function requestPermission() {
   try {
-    const { status: existing } = await Notifications.getPermissionsAsync();
+    const N = await getN();
+    const { status: existing } = await N.getPermissionsAsync();
     let final = existing;
     if (existing !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
+      const { status } = await N.requestPermissionsAsync();
       final = status;
     }
     if (final !== "granted") {
@@ -211,7 +237,19 @@ export async function requestPermission() {
   }
 }
 
-export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings) {
+// Serialize scheduling so rapid or concurrent calls can't leave two
+// repeating reminders registered at once (which delivers duplicate notifications).
+let _scheduleChain = Promise.resolve();
+
+export function scheduleWaterReminder(intervalSeconds, quietHoursSettings) {
+  const next = _scheduleChain
+    .catch(() => {})
+    .then(() => _scheduleWaterReminder(intervalSeconds, quietHoursSettings));
+  _scheduleChain = next;
+  return next;
+}
+
+async function _scheduleWaterReminder(intervalSeconds, quietHoursSettings) {
   await cancelAllReminders();
 
   try {
@@ -219,12 +257,9 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
     let delaySeconds = intervalSeconds;
 
     // ─── Escalation check (C4) ──────────────────────
+    // Tier drives message urgency only — it must NOT shorten the user's
+    // chosen interval (previously capped to 5 min, which spammed reminders).
     const tier = await getEscalationTier();
-    if (tier === "alert") {
-      // Shorten interval to 5 min during alert tier
-      delaySeconds = Math.min(delaySeconds, 300);
-      console.log(`Alert tier — interval reduced to ${delaySeconds}s`);
-    }
 
     // ─── Weather-based heat adjustment (D3) ─────────
     try {
@@ -260,6 +295,15 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
     const catSettings = settings.messageCategories || {};
     const enabledCategories = Object.keys(catSettings).filter((c) => catSettings[c]);
 
+    // Y6: Streak-aware messages — fetch current streak for context
+    let currentStreak = 0;
+    try {
+      const streakData = await getStreakData(settings.dailyGoal);
+      currentStreak = streakData.current || 0;
+    } catch (e) {
+      // Streak not available — fall through with 0
+    }
+
     // C6: Urgent messages for escalation tiers
     const escalationEnabled = [...enabledCategories];
     if (tier !== "normal" && !escalationEnabled.includes("urgent")) {
@@ -269,6 +313,7 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
     const message = pickMessage({
       goalProgress,
       goalGlassesLeft,
+      streak: currentStreak,
       enabledCategories: escalationEnabled,
       lastMessageId: settings.lastMessageId,
     });
@@ -276,9 +321,10 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
     await saveSettings({ lastMessageId: message.id });
 
     // ─── Build content (C6) ─────────────────────────
-    const content = buildEscalationContent(tier, message);
+    const content = await buildEscalationContent(tier, message);
 
-    const id = await Notifications.scheduleNotificationAsync({
+    const N = await getN();
+    const id = await N.scheduleNotificationAsync({
       content,
       trigger: {
         type: "timeInterval",
@@ -296,11 +342,73 @@ export async function scheduleWaterReminder(intervalSeconds, quietHoursSettings)
   }
 }
 
+/**
+ * Check if the current streak has crossed a celebration milestone
+ * (7 or 30 days) that hasn't been celebrated yet, and if so,
+ * schedule a one-shot celebration notification and persist the milestone.
+ *
+ * Uses per-milestone tracking (dedicated @plenty_milestones AsyncStorage key)
+ * to prevent re-triggering across streak cycles and app restarts.
+ *
+ * NOTE: This bypasses the AD-5 scheduleWaterReminder() gate intentionally —
+ * it's a one-shot notification (repeats: false) that fires immediately.
+ * Routing through the gate would call cancelAllReminders(), destroying the
+ * user's repeating water reminder. The dedicated milestone key also avoids
+ * the saveSettings() race condition that both functions would otherwise share.
+ *
+ * @returns {Promise<number|null>} — the milestone celebrated (7 or 30), or null
+ */
+export async function scheduleMilestoneCelebration() {
+  try {
+    const settings = await getSettings();
+    const streakData = await getStreakData(settings.dailyGoal);
+    const currentStreak = streakData.current || 0;
+
+    const milestoneMessage = pickMilestoneMessage(currentStreak);
+    if (!milestoneMessage) return null;
+
+    // Per-milestone gate: check if this specific milestone was already celebrated
+    // Uses dedicated storage key to avoid race with saveSettings()
+    const celebratedMilestones = await getCelebratedMilestones();
+    if (celebratedMilestones.includes(currentStreak)) return null;
+
+    // Schedule a one-shot celebration notification
+    try {
+      const N = await getN();
+      await N.scheduleNotificationAsync({
+        content: {
+          title: "🎉 Streak Milestone!",
+          body: milestoneMessage.text,
+          data: { type: "milestone", streak: currentStreak },
+        },
+        trigger: {
+          type: "timeInterval",
+          seconds: 1,
+          repeats: false,
+        },
+      });
+    } catch (_) {
+      // getN() or scheduleNotificationAsync unavailable (test env, Expo Go).
+      // Still save milestone — prevents re-triggering on app restart / cache rebuild.
+      // Per-milestone tracking ensures the celebration fires again after a streak
+      // break + rebuild (unlike the old monotonic scalar).
+    }
+
+    await saveCelebratedMilestone(currentStreak);
+    console.log(`Celebrated ${currentStreak}-day streak milestone!`);
+    return currentStreak;
+  } catch (e) {
+    console.error("Failed to schedule milestone celebration:", e.message);
+    return null;
+  }
+}
+
 export async function cancelAllReminders() {
   try {
-    const existing = await Notifications.getAllScheduledNotificationsAsync();
+    const N = await getN();
+    const existing = await N.getAllScheduledNotificationsAsync();
     if (existing.length > 0) {
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      await N.cancelAllScheduledNotificationsAsync();
       console.log("All reminders cancelled");
     }
   } catch (e) {
@@ -310,7 +418,8 @@ export async function cancelAllReminders() {
 
 export async function getScheduledReminders() {
   try {
-    return await Notifications.getAllScheduledNotificationsAsync();
+    const N = await getN();
+    return await N.getAllScheduledNotificationsAsync();
   } catch (e) {
     console.error("Failed to get reminders:", e.message);
     return [];
@@ -318,14 +427,18 @@ export async function getScheduledReminders() {
 }
 
 export function setupNotificationTapHandler(handler) {
-  const subscription =
-    Notifications.addNotificationResponseReceivedListener((response) =>
-      handler(response.notification)
-    );
+  const subscriptionPromise = getN().then((N) => {
+    const subscription =
+      N.addNotificationResponseReceivedListener((response) =>
+        handler(response.notification)
+      );
 
-  Notifications.getLastNotificationResponseAsync().then((response) => {
-    if (response) handler(response.notification);
-  });
+    N.getLastNotificationResponseAsync().then((response) => {
+      if (response) handler(response.notification);
+    });
 
-  return subscription;
+    return subscription;
+  }).catch(() => null);
+
+  return { remove: () => subscriptionPromise.then((s) => s?.remove()) };
 }

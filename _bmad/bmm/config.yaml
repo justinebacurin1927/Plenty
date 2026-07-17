@@ -1,0 +1,10 @@
+# BMM Config — resolved from _bmad/config.toml + overrides
+user_name: Jaycee
+project_name: Plenty
+communication_language: en
+document_output_language: en
+output_folder: docs
+planning_artifacts: docs/planning-artifacts
+implementation_artifacts: docs/implementation-artifacts
+project_knowledge: docs
+date: "2026-07-15"

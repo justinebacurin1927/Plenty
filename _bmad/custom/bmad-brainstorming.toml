@@ -1,0 +1,7 @@
+# Team-level overrides for bmad-brainstorming (committed)
+
+[workflow]
+persistent_facts = [
+  "file:{project-root}/docs/project-context.md",
+]
+output_dir = "{planning_artifacts}/brainstorming"

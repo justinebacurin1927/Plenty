@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  ScrollView,
   StyleSheet,
   SafeAreaView,
   Dimensions,
@@ -11,11 +12,18 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Mascot, { getRandomMessage } from "../components/Mascot";
-import { getLogs, getSettings, getUnlockedAchievements, getAchievementProgress } from "../utils/storage";
+import {
+  getLogs,
+  getSettings,
+  getUnlockedAchievements,
+  getAchievementProgress,
+  getStreakData,
+} from "../utils/storage";
 import { buildGalleryList } from "../utils/achievements";
 import { useTheme } from "../context/ThemeContext";
 import { ShareCardForwardRef } from "../components/ShareCard";
 import { captureAndShare } from "../utils/share";
+import REWARDS from "../constants/rewards";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 24 * 3) / 2;
@@ -30,6 +38,8 @@ export default function AchievementsScreen() {
   const [mascotMessage, setMascotMessage] = useState(null);
   const [mascotVariant, setMascotVariant] = useState("classic");
   const [sharingItem, setSharingItem] = useState(null);
+  const [streakData, setStreakData] = useState(null);
+  const [milestones, setMilestones] = useState([]);
   const achievementCardRef = useRef(null);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
 
@@ -54,13 +64,28 @@ export default function AchievementsScreen() {
             getUnlockedAchievements(),
             getAchievementProgress(),
           ]);
+          const sData = await getStreakData(settings.dailyGoal || 8).catch(() => null);
           const list = buildGalleryList(logs, settings, unlocked, progress);
           list.sort((a, b) => {
             if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
             return b.percent - a.percent;
           });
           setMascotVariant(settings.mascotVariant || "classic");
+
+          // Compute milestone data
+          if (sData) {
+            setStreakData(sData);
+            const ms = REWARDS.map((r) => ({
+              ...r,
+              achieved: sData.milestonesReached.includes(r.id),
+              daysToGo: Math.max(r.tier - sData.longest, 0),
+            }));
+            setMilestones(ms);
+          }
+
           setItems(list);
+          // Use settings only for dailyGoal if needed again later
+          void settings;
         } catch (e) {
           console.error("Failed to load achievements:", e.message, e.stack);
         } finally {
@@ -137,7 +162,7 @@ export default function AchievementsScreen() {
         </View>
       </View>
 
-      {items.length === 0 ? (
+      {items.length === 0 && milestones.length === 0 ? (
         <View style={s.empty}>
           <Ionicons name="trophy" size={60} color={colors.textTertiary} />
           <Text style={s.emptyText}>No achievements yet</Text>
@@ -150,6 +175,59 @@ export default function AchievementsScreen() {
           numColumns={2}
           columnWrapperStyle={s.row}
           contentContainerStyle={s.grid}
+          ListHeaderComponent={
+            milestones.length > 0 ? (
+              <View style={s.rewardsSection}>
+                <Text style={[s.rewardsTitle, { color: colors.text }]}>
+                  Streak Rewards
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {milestones.map((m) => (
+                    <TouchableOpacity
+                      key={m.id}
+                      style={[
+                        s.rewardCard,
+                        {
+                          backgroundColor: m.achieved ? colors.surface : colors.surfaceSecondary,
+                          borderColor: m.achieved ? colors.mascotMoodBorder : colors.borderLight,
+                        },
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          s.rewardEmoji,
+                          !m.achieved && s.rewardEmojiLocked,
+                        ]}
+                      >
+                        {m.achieved ? m.emoji : "🔒"}
+                      </Text>
+                      <Text style={[s.rewardTitle, { color: m.achieved ? colors.text : colors.textTertiary }]}>
+                        {m.title}
+                      </Text>
+                      <Text style={[s.rewardDesc, { color: colors.textTertiary }]} numberOfLines={2}>
+                        {m.achieved ? m.description : m.reward}
+                      </Text>
+                      {m.achieved ? (
+                        <View style={s.rewardAchievedBadge}>
+                          <Ionicons name="checkmark-circle" size={12} color={colors.success} />
+                          <Text style={[s.rewardBadgeText, { color: colors.success }]}>Unlocked</Text>
+                        </View>
+                      ) : (
+                        <Text style={[s.rewardDaysText, { color: colors.textSecondary }]}>
+                          {m.daysToGo > 0
+                            ? `${m.daysToGo} day${m.daysToGo > 1 ? "s" : ""} to go`
+                            : "Almost there!"}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                {/* Divider */}
+                <View style={[s.divider, { backgroundColor: colors.separator }]} />
+              </View>
+            ) : null
+          }
           renderItem={renderCard}
           showsVerticalScrollIndicator={false}
         />
@@ -306,6 +384,60 @@ function makeStyles(colors) {
       marginTop: 4,
       textAlign: "center",
       paddingHorizontal: 40,
+    },
+
+    // ── Streak Rewards ──
+    rewardsSection: {
+      marginBottom: 12,
+    },
+    rewardsTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 10,
+    },
+    rewardCard: {
+      width: 130,
+      borderRadius: 14,
+      borderWidth: 1,
+      padding: 12,
+      marginRight: 10,
+      alignItems: "center",
+    },
+    rewardEmoji: {
+      fontSize: 32,
+      marginBottom: 6,
+    },
+    rewardEmojiLocked: {
+      fontSize: 28,
+    },
+    rewardTitle: {
+      fontSize: 12,
+      fontWeight: "700",
+      textAlign: "center",
+      marginBottom: 4,
+    },
+    rewardDesc: {
+      fontSize: 10,
+      textAlign: "center",
+      lineHeight: 13,
+      marginBottom: 8,
+    },
+    rewardAchievedBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+    },
+    rewardBadgeText: {
+      fontSize: 11,
+      fontWeight: "600",
+    },
+    rewardDaysText: {
+      fontSize: 11,
+      fontWeight: "500",
+    },
+    divider: {
+      height: 1,
+      marginVertical: 12,
     },
   });
 }

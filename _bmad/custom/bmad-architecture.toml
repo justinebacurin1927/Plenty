@@ -1,0 +1,4 @@
+# Team-level overrides for bmad-architecture (committed)
+
+[workflow]
+spine_output_path = "{planning_artifacts}/architecture"

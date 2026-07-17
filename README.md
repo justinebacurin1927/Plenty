@@ -16,7 +16,6 @@
 - **Gamification** — 12 achievements with popup celebration, mascot (4 expressions, 4 variants), streak tracking
 - **Dark mode** — System-follow, light, or dark theme toggle in Settings
 - **Android widget** — Home screen widget showing today's progress, streak, and glasses count
-- **Health Connect sync** — Read/write hydration data to Health Connect (Android)
 - **Share cards** — Generate shareable images for streak and achievement milestones
 - **Monthly reports** — Auto-generated with glasses count, avg/day, best streak, goal hits, quarterly trends, natural language highlights
 - **Pattern analysis** — Peak drinking hours, lull period detection, day-of-week insights
@@ -100,7 +99,6 @@ Plenty/
 │   ├── patterns.js           # Peak hour, lull, day-of-week analysis
 │   ├── weather.js            # Open-Meteo API, caching, heat adjustment
 │   ├── export.js             # CSV/JSON export and import via share sheet
-│   ├── health.js             # Health Connect sync service (read/write/permissions)
 │   ├── share.js              # Share image utility via expo-sharing
 │   └── widget.js             # JS bridge to native Android widget module
 ├── modules/
@@ -138,7 +136,6 @@ Plenty/
 - [React Navigation](https://reactnavigation.org/) — Bottom tab navigation
 - [@expo/vector-icons](https://docs.expo.dev/guides/icons/) — Ionicons for all icons
 - [Open-Meteo](https://open-meteo.com/) — Free weather API (no key needed)
-- [react-native-health-connect](https://github.com/matinzd/react-native-health-connect) — Health Connect for Android
 - [expo-sharing](https://docs.expo.dev/versions/latest/sdk/sharing/) — System share sheet
 - [react-native-view-shot](https://github.com/DSergiu/react-native-view-shot) — Card image capture
 

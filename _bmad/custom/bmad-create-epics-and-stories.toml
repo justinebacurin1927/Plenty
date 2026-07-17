@@ -1,0 +1,4 @@
+# Team-level overrides for bmad-create-epics-and-stories (committed)
+
+[workflow]
+output_path = "{planning_artifacts}/epics-and-stories"

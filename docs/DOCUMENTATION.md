@@ -17,7 +17,6 @@
 | Navigation | `@react-navigation/native` + bottom tabs |
 | Icons | `@expo/vector-icons` (Ionicons) |
 | Weather | Open-Meteo (free API, no key) |
-| Health | `react-native-health-connect` |
 | Build | Expo Application Services (EAS) |
 | Patches | `patch-package` |
 
@@ -61,7 +60,6 @@ Projects/Plenty/
 │   ├── patterns.js               # Peak hour, lull, day-of-week pattern analysis
 │   ├── weather.js                # Open-Meteo API, caching, heat adjustment, advisory
 │   ├── export.js                 # CSV/JSON export and import via share sheet
-│   ├── health.js                 # Health Connect sync (read/write/permissions)
 │   ├── share.js                  # Image capture and sharing utility
 │   └── widget.js                 # JS bridge to Android home screen widget
 ├── modules/
@@ -69,7 +67,6 @@ Projects/Plenty/
 ├── plugins/
 │   └── withPlentyWidget.js       # Config plugin for widget AndroidManifest entries
 ├── patches/
-│   └── react-native-health-connect+3.5.3.patch
 ├── assets/                       # App icon, adaptive icons, splash, favicon
 └── docs/                         # Sprint plans and documentation
 ```
@@ -89,7 +86,6 @@ Projects/Plenty/
 - Debounce: prevents double-logs within 500ms
 - Daily progress: ML count, glass count, percentage toward goal
 - Weekly chart: 7-day bar chart showing daily totals
-- Auto-sync to Health Connect (optional toggle)
 
 ### Achievements (12 total)
 | # | Name | Trigger |
@@ -130,12 +126,6 @@ Projects/Plenty/
 - Progress bar visualization
 - Tap widget to open app
 - Updates on every drink log via SharedPreferences bridge
-
-### Health Connect (Android)
-- Write hydration data to Health Connect on each log
-- Read last 7 days on first sync
-- Toggle in Settings with permission prompt
-- Last sync timestamp indicator
 
 ### Social & Sharing
 - Share streak card: streak count, weekly stats, motivational tagline
@@ -184,7 +174,6 @@ Projects/Plenty/
 - Weight-based goal calculator (kg x 0.033)
 - Activity boost toggle (+3 glasses)
 - Message category selection (7 categories)
-- Health Connect sync toggle
 - Weather location (requires permission)
 - Mascot variant selector (4 options)
 - Data import (JSON) and export (CSV, JSON)
@@ -215,7 +204,6 @@ User taps Start
 @plenty_monthly_cache — Cached monthly aggregation
 @plenty_weather_cache — Cached weather data (6h TTL)
 @plenty_theme_pref    — "auto" | "light" | "dark"
-@plenty_health_sync   — "true" | "false"
 @plenty_widget        — Widget shared preferences
 ```
 
@@ -242,7 +230,7 @@ cd ~/Projects/Plenty
 npx eas build --platform android --profile preview
 ```
 
-Widget and Health Connect require native modules — they won't work in Expo Go. Build via EAS, download the APK, and side-load on any Android device.
+The widget requires native modules — it won't work in Expo Go. Build via EAS, download the APK, and side-load on any Android device.
 
 ## Design Decisions
 
@@ -260,7 +248,7 @@ Widget and Health Connect require native modules — they won't work in Expo Go.
 
 - **Sprint 3**: Added mascot, achievements, streak tracking, custom messages (30 messages, 7 categories)
 - **Sprint 4**: Added monthly reports, pattern analysis, smart goal calculator, weather integration
-- **Sprint 5**: Added dark mode, Android widget, Health Connect sync, social sharing cards, performance optimization, icon/branding finalization
+- **Sprint 5**: Added dark mode, Android widget, social sharing cards, performance optimization, icon/branding finalization
 
 ## Team
 

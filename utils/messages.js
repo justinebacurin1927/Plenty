@@ -58,11 +58,41 @@ const MESSAGES = [
   { id: "gp3", text: "Final stretch! You've got {X} glass left.", categories: ["goal-proximity"] },
   { id: "gp4", text: "Goal reached! You crushed it today!", categories: ["goal-proximity"] },
   { id: "gp5", text: "Overachiever! Doubled your goal! Champ!", categories: ["goal-proximity"] },
+
+  // ── Streak (tier-aware, dynamically selected) ──
+  // These use {streak} placeholder replaced at runtime.
+
+  // short (3-6 days)
+  { id: "ss1", text: "Don't break your {streak}-day streak! 🏆", categories: ["streak", "streak-short"] },
+  { id: "ss2", text: "You're on a {streak}-day streak — keep it going!", categories: ["streak", "streak-short"] },
+  { id: "ss3", text: "{streak} days strong — don't break your streak!", categories: ["streak", "streak-short"] },
+  { id: "ss4", text: "Protect your {streak}-day streak — time to hydrate!", categories: ["streak", "streak-short"] },
+
+  // established (7-29 days)
+  { id: "se1", text: "You're on a {streak}-day streak — that's commitment!", categories: ["streak", "streak-established"] },
+  { id: "se2", text: "{streak}-day streak and counting! Don't stop now!", categories: ["streak", "streak-established"] },
+  { id: "se3", text: "Your {streak}-day streak is impressive — keep flowing!", categories: ["streak", "streak-established"] },
+  { id: "se4", text: "Look at you — {streak}-day streak of staying hydrated! 🎉", categories: ["streak", "streak-established"] },
+
+  // long (30+ days)
+  { id: "sl1", text: "🔥 {streak}-day streak! You're unstoppable!", categories: ["streak", "streak-long"] },
+  { id: "sl2", text: "{streak}-day streak of hydration mastery! You're a legend!", categories: ["streak", "streak-long"] },
+  { id: "sl3", text: "Incredible — {streak}-day streak! Your body thanks you!", categories: ["streak", "streak-long"] },
 ];
 
 export default MESSAGES;
 
 // ─── Picker ───────────────────────────────────────────
+
+/**
+ * Determine the streak tier key from streak length.
+ */
+function streakTierKey(streak) {
+  if (streak >= 30) return "streak-long";
+  if (streak >= 7) return "streak-established";
+  if (streak >= 3) return "streak-short";
+  return null;
+}
 
 /**
  * Pick a notification message based on context.
@@ -71,6 +101,7 @@ export default MESSAGES;
  * @param {number}  options.hour          – current hour (0-23), for time-aware selection
  * @param {number}  options.goalProgress  – 0-100, how close to daily goal
  * @param {number}  options.goalGlassesLeft – how many glasses to go
+ * @param {number}  options.streak        – current streak length (0 if none)
  * @param {string[]} options.enabledCategories – categories the user has enabled
  * @param {string}  options.lastMessageId – the last message shown (never repeat)
  * @returns {{ id: string, text: string, categories: string[] }}
@@ -79,6 +110,7 @@ export function pickMessage({
   hour = new Date().getHours(),
   goalProgress = -1,
   goalGlassesLeft = -1,
+  streak = 0,
   enabledCategories = ["encouraging", "funny", "fact", "morning", "evening"],
   lastMessageId = null,
 } = {}) {
@@ -113,15 +145,36 @@ export function pickMessage({
     candidates.push(...evening);
   }
 
-  // Fill with regular messages from enabled categories
-  const regular = MESSAGES.filter(
-    (m) =>
-      !m.categories.includes("goal-proximity") &&
-      !m.categories.includes("morning") &&
-      !m.categories.includes("evening") &&
-      m.categories.some((c) => enabledCategories.includes(c))
-  );
-  candidates.push(...regular);
+  // If not in goal-proximity territory, check for streak-awareness
+  if (goalProgress < 80 && streak >= 3) {
+    const tier = streakTierKey(streak);
+    if (tier) {
+      const streakMsgs = MESSAGES
+        .filter((m) => m.categories.includes(tier))
+        .map((m) => ({
+          ...m,
+          text: m.text.replace("{streak}", String(streak)),
+        }));
+      if (streakMsgs.length > 0) {
+        // Keep any time-skewed messages, replace regular with streak tier
+        const timeSkewed = candidates.filter((m) =>
+          m.categories.includes("morning") || m.categories.includes("evening")
+        );
+        candidates = [...timeSkewed, ...streakMsgs];
+      }
+    }
+  } else if (goalProgress < 80) {
+    // No streak or low streak — fill with regular messages from enabled categories
+    const regular = MESSAGES.filter(
+      (m) =>
+        !m.categories.includes("goal-proximity") &&
+        !m.categories.includes("morning") &&
+        !m.categories.includes("evening") &&
+        !m.categories.includes("streak") &&
+        m.categories.some((c) => enabledCategories.includes(c))
+    );
+    candidates.push(...regular);
+  }
 
   // Remove last message if possible
   if (lastMessageId && candidates.length > 1) {
@@ -137,6 +190,14 @@ export function pickMessage({
         );
       }
     }
+  }
+
+  // If goal-proximity messages are present, prefer them (dominant priority)
+  const hasGoalProximity = candidates.some((m) =>
+    m.categories.includes("goal-proximity")
+  );
+  if (hasGoalProximity) {
+    candidates = candidates.filter((m) => m.categories.includes("goal-proximity"));
   }
 
   // Random pick — fallback if all categories disabled
@@ -157,12 +218,29 @@ export function pickMessage({
 }
 
 /**
+ * Return a celebration notification for milestone streak boundaries.
+ * Returns null if the streak is not a celebration milestone.
+ *
+ * @param {number} streak – current streak length
+ * @returns {{ type: string, text: string, categories: string[] } | null}
+ */
+export function pickMilestoneMessage(streak) {
+  if (streak === 7) {
+    return { type: "milestone", text: "🎉 7-day streak! You're crushing it!", categories: ["milestone"] };
+  }
+  if (streak === 30) {
+    return { type: "milestone", text: "🔥 30-day streak! You're an absolute legend!", categories: ["milestone"] };
+  }
+  return null;
+}
+
+/**
  * Get all unique category names from the message pool.
  */
 export function getAvailableCategories() {
   const set = new Set();
   MESSAGES.forEach((m) => m.categories.forEach((c) => set.add(c)));
-  return Array.from(set).filter((c) => c !== "goal-proximity"); // not user-togglable
+  return Array.from(set).filter((c) => c !== "goal-proximity" && !c.startsWith("streak")); // not user-togglable
 }
 
 /**

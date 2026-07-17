@@ -1,0 +1,5 @@
+# Team-level overrides for bmad-party-mode (committed)
+# Override the skill defaults in customize.toml here.
+# Merge rules: scalars override, arrays append (unless keyed by code/id).
+# See the skill's own customize.toml for all available fields.
+

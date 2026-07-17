@@ -1,8 +1,5 @@
 {
   "enabledPlugins": {
     "expo@claude-plugins-official": true
-  },
-  "hooks": {
-    "post-tool-use": "bash .claude/hooks/sync-md-to-vault.sh"
   }
 }
