@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
+import { useReducedMotion } from "../utils/motion";
 
 export const BUBBLE_MESSAGES = [
   "Drink up!",
@@ -41,8 +42,7 @@ export function getRandomMessage() {
 
 export function streakToExpression(streak) {
   if (streak >= 30) return "excited";
-  if (streak >= 14) return "happy";
-  if (streak >= 7)  return "happy";
+  if (streak >= 7) return "happier";
   return "happy";
 }
 
@@ -56,6 +56,7 @@ export default function Mascot({
   style,
 }) {
   const { colors, isDark } = useTheme();
+  const reduceMotion = useReducedMotion();
   const dropSide = size * 0.62;
   const f = dropSide / 100;
   const bounceAnim = useRef(new Animated.Value(0)).current;
@@ -78,6 +79,7 @@ export default function Mascot({
       bounceAnim.setValue(0);
       return;
     }
+    if (reduceMotion) return;
     const sequence = Animated.loop(
       Animated.sequence([
         Animated.timing(bounceAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
@@ -89,10 +91,12 @@ export default function Mascot({
     );
     sequence.start();
     return () => sequence.stop();
-  }, [celebration]);
+  }, [celebration, reduceMotion]);
 
   // ── Idle float (gentle 6px bob, 2s cycle) ──
+  // Skipped when reduced motion is enabled
   useEffect(() => {
+    if (reduceMotion) return;
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
@@ -101,10 +105,12 @@ export default function Mascot({
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [reduceMotion]);
 
   // ── Blink cycle (every 4-6s) ──
+  // Skipped when reduced motion is enabled
   useEffect(() => {
+    if (reduceMotion) return;
     const scheduleBlink = () => {
       const delay = 4000 + Math.random() * 2000;
       return setTimeout(() => {
@@ -122,10 +128,12 @@ export default function Mascot({
     return () => {
       if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
     };
-  }, []);
+  }, [reduceMotion]);
 
   // ── Arm wave (gentle back-and-forth) ──
+  // Skipped when reduced motion is enabled
   useEffect(() => {
+    if (reduceMotion) return;
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(waveAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
@@ -134,7 +142,7 @@ export default function Mascot({
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [reduceMotion]);
 
   const bounce = bounceAnim.interpolate({
     inputRange: [-1, 0, 1],
@@ -324,6 +332,12 @@ function Mouth({ expression, size, faceColor }) {
       <View style={{ marginTop: 4, width: w, height: w * 0.35, borderBottomLeftRadius: w * 0.4, borderBottomRightRadius: w * 0.4, borderBottomWidth: 2.5, borderBottomColor: faceColor }} />
     );
   }
+  if (expression === "happier") {
+    // Wider smile than "happy" to show increased happiness
+    return (
+      <View style={{ marginTop: 4, width: w * 1.2, height: w * 0.45, borderBottomLeftRadius: w * 0.5, borderBottomRightRadius: w * 0.5, borderBottomWidth: 3, borderBottomColor: faceColor }} />
+    );
+  }
   if (expression === "excited") {
     return (
       <View style={{ marginTop: 4, width: w * 0.5, height: w * 0.5, borderRadius: w * 0.25, backgroundColor: faceColor }} />
@@ -337,6 +351,7 @@ function Mouth({ expression, size, faceColor }) {
 function eyeType(expression, side) {
   const MAP = {
     happy: { left: "circle", right: "circle" },
+    happier: { left: "big", right: "big" },
     excited: { left: "big", right: "big" },
     reminding: { left: "line", right: "circle" },
     sleepy: { left: "line", right: "line" },

@@ -33,8 +33,12 @@ import { refreshWidget } from "../utils/widget";
 import { ShareCardForwardRef } from "../components/ShareCard";
 import { captureAndShare } from "../utils/share";
 import Heatmap from "../components/Heatmap";
+import { useCountUp, useReducedMotion } from "../utils/motion";
+import { triggerHaptic, ImpactFeedbackStyle } from "../utils/haptics";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import StreakFlame from "../components/StreakFlame";
 import WaterFill from "../components/WaterFill";
+import PressableScale from "../components/PressableScale";
 
 const PRESET_MINUTES = [1, 5, 15, 30, 60, 120];
 
@@ -90,6 +94,9 @@ export default function HomeScreen({ navigation }) {
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
   const lastLogRef = React.useRef(0);
   const waterFillRef = useRef(null);
+  const reducedMotion = useReducedMotion();
+  const goalHitRef = useRef(false);
+  const mountGuard = useRef(true);
   const [waterWidth, setWaterWidth] = useState(Dimensions.get("window").width - 48);
 
   // Load everything on mount
@@ -266,7 +273,9 @@ export default function HomeScreen({ navigation }) {
       lastLogRef.current = now;
 
       await addLog({ amount });
-      Vibration.vibrate(50);
+      // Android fallback vibration — only fires when reduced motion is on
+      // (haptic fires at the PressableScale call site instead)
+      if (!reducedMotion) Vibration.vibrate(50);
       setTodayCount((c) => c + 1);
       setTodayMl((m) => m + amount);
       const strk = await getStreak(dailyGoal);
@@ -299,7 +308,7 @@ export default function HomeScreen({ navigation }) {
       waterFillRef.current?.triggerRipple();
 
     },
-    [todayMl, dailyGoal]
+    [todayMl, dailyGoal, reducedMotion]
   );
 
   useEffect(() => {
@@ -358,6 +367,62 @@ export default function HomeScreen({ navigation }) {
     () => Math.round(todayMl / 250),
     [todayMl]
   );
+
+  const { displayText } = useCountUp(todayMl);
+
+  // ── Goal celebration gate ──
+  const goalReachedScale = useSharedValue(0);
+  const goalReachedOpacity = useSharedValue(0);
+
+  const goalReachedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: goalReachedScale.value }],
+    opacity: goalReachedOpacity.value,
+  }));
+
+  // Watch progressPct for first crossing of 100%
+  // Uses mountGuard to prevent celebration on initial render if already >= 100%
+  // eslint-disable-next-line react-hooks/exhaustive-deps — refs/shared-values are stable; don't trigger re-run
+  useEffect(() => {
+    if (mountGuard.current) {
+      mountGuard.current = false;
+      if (progressPct >= 1) {
+        goalHitRef.current = true; // Already met on load — lock gate without triggering
+        goalReachedScale.value = 1;
+        goalReachedOpacity.value = 1;
+      }
+      return;
+    }
+
+    if (progressPct >= 1 && !goalHitRef.current) {
+      goalHitRef.current = true;
+      waterFillRef.current?.triggerGoalCelebration();
+
+      if (!reducedMotion) {
+        // Push synthetic achievement to trigger confetti + popup
+        // Use functional updater to preserve any real achievements just unlocked
+        setPopupAchievements(prev => {
+          if (prev.some(a => a.title === "Goal Reached!")) return prev;
+          return [...prev, { title: "Goal Reached!", emoji: "🎉", description: "You hit your daily hydration goal!" }];
+        });
+
+        goalReachedScale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.back(1.5)) });
+        goalReachedOpacity.value = withTiming(1, { duration: 400 });
+      } else {
+        goalReachedScale.value = 1;
+        goalReachedOpacity.value = 1;
+      }
+    }
+  }, [progressPct, reducedMotion]);
+
+  // Reset gate on new day (todayMl drops to 0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps — refs/shared-values are stable; don't trigger re-run
+  useEffect(() => {
+    if (todayMl === 0) {
+      goalHitRef.current = false;
+      goalReachedScale.value = 0;
+      goalReachedOpacity.value = 0;
+    }
+  }, [todayMl]);
 
   return (
     <SafeAreaView style={s.container}>
@@ -426,7 +491,7 @@ export default function HomeScreen({ navigation }) {
         <View style={s.progressCard}>
           <View style={s.progressHeader}>
             <Ionicons name="water" size={32} color={colors.primary} />
-            <Text style={s.progressCount}>{todayMl}ml</Text>
+            <Text style={s.progressCount}>{displayText}ml</Text>
           </View>
           <Text style={s.progressLabel}>
             {glassesFromMl} / {dailyGoal} glasses
@@ -435,10 +500,10 @@ export default function HomeScreen({ navigation }) {
             <WaterFill ref={waterFillRef} fill={progressPct} width={waterWidth} height={200} />
           </View>
           {progressPct >= 1 && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}>
+            <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }, goalReachedStyle]}>
               <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-              <Text style={s.goalMet}>Goal reached!</Text>
-            </View>
+              <Text style={s.goalMet}>Goal reached! 🎉</Text>
+            </Animated.View>
           )}
         </View>
 
@@ -566,9 +631,12 @@ export default function HomeScreen({ navigation }) {
           ) : null}
         </View>
 
-        <TouchableOpacity
+        <PressableScale
           style={[s.mainButton, isActive ? s.stopButton : s.startButton]}
-          onPress={isActive ? stopReminder : startReminder}
+          onPress={() => {
+            if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Medium);
+            return isActive ? stopReminder() : startReminder();
+          }}
           accessibilityLabel={isActive ? "Stop reminders" : "Start reminders"}
           accessibilityRole="button"
         >
@@ -580,19 +648,25 @@ export default function HomeScreen({ navigation }) {
           <Text style={s.mainButtonText}>
             {isActive ? "Stop Reminders" : "Start Reminders"}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
 
-        <TouchableOpacity
+        <PressableScale
           style={s.drinkButton}
-          onPress={() => logDrink(drinkAmount)}
-          onLongPress={() => setShowAmountPicker(true)}
+          onPress={() => {
+            if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Heavy);
+            logDrink(drinkAmount);
+          }}
+          onLongPress={() => {
+            if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Light);
+            setShowAmountPicker(true);
+          }}
           delayLongPress={300}
           accessibilityLabel={`Log water drink, ${drinkAmount} milliliters`}
           accessibilityRole="button"
         >
           <Ionicons name="add-circle" size={24} color={colors.primary} />
           <Text style={s.drinkButtonText}>I drank water ({drinkAmount}ml)</Text>
-        </TouchableOpacity>
+        </PressableScale>
 
         {permissionGranted === false && (
           <View style={s.warningBlock}>
@@ -618,10 +692,11 @@ export default function HomeScreen({ navigation }) {
           <View style={s.modalSheet}>
             <Text style={s.modalTitle}>How much did you drink?</Text>
             {AMOUNT_OPTIONS.map((amount) => (
-              <TouchableOpacity
+              <PressableScale
                 key={amount}
                 style={s.modalOption}
                 onPress={() => {
+                  if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Light);
                   logDrink(amount);
                   setShowAmountPicker(false);
                 }}
@@ -632,7 +707,7 @@ export default function HomeScreen({ navigation }) {
                   color={colors.primary}
                 />
                 <Text style={s.modalOptionText}>{amount} ml</Text>
-              </TouchableOpacity>
+              </PressableScale>
             ))}
             <TouchableOpacity
               style={s.modalCancel}

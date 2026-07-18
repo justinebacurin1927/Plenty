@@ -1,5 +1,5 @@
 # generated: 2026-07-18
-# last_updated: 2026-07-18
+# last_updated: 2026-07-19
 # project: Plenty
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18
-last_updated: 2026-07-18
+last_updated: 2026-07-19
 project: Plenty
 project_key: NOKEY
 tracking_system: file-system
@@ -71,8 +71,8 @@ development_status:
   epic-3: in-progress
   3-1-water-fill-component: done
   3-2-water-fill-ripple: done
-  3-3-count-up-numbers: backlog
-  3-4-goal-reached-moment: backlog
+  3-3-count-up-numbers: done
+  3-4-goal-reached-moment: done
   epic-3-retrospective: optional
 
   # Epic 4 — Onboarding
@@ -89,9 +89,9 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6 — Mascot & Micro-interactions
-  epic-6: backlog
-  6-1-mascot-idle-animation: backlog
-  6-2-press-feedback-haptics: backlog
+  epic-6: in-progress
+  6-1-mascot-idle-animation: done
+  6-2-press-feedback-haptics: done
   6-3-screen-transitions-toast: backlog
   6-4-weekly-chart-entrance: backlog
   epic-6-retrospective: optional

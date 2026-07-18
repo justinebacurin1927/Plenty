@@ -49,7 +49,11 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
   const containerHeight = useSharedValue(height);
   const rippleAmplitude = useSharedValue(0);
 
-  // ── Imperative handle: triggerRipple ──
+  // Shimmer shared values for goal-reached celebration
+  const shimmerPosition = useSharedValue(0);
+  const shimmerOpacity = useSharedValue(0);
+
+  // ── Imperative handle: triggerRipple + triggerGoalCelebration ──
   useImperativeHandle(ref, () => ({
     triggerRipple() {
       if (reducedMotion) return;
@@ -59,6 +63,28 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
         duration: RIPPLE_CONFIG.duration,
         easing: Easing.out(Easing.cubic),
       });
+    },
+
+    triggerGoalCelebration() {
+      if (reducedMotion) return;
+
+      // Overshoot: briefly push fill past 1.0 then spring back
+      cancelAnimation(animatedFill);
+      animatedFill.value = withTiming(1.05, { duration: 400, easing: Easing.out(Easing.cubic) }, (finished) => {
+        if (finished) {
+          animatedFill.value = withTiming(1.0, { duration: 400, easing: Easing.inOut(Easing.cubic) });
+        }
+      });
+
+      // Shimmer: white highlight sweeps left-to-right across the water surface
+      cancelAnimation(shimmerPosition);
+      cancelAnimation(shimmerOpacity);
+
+      shimmerPosition.value = -containerWidth.value * 1.5;
+      shimmerOpacity.value = withTiming(0.3, { duration: 500, easing: Easing.out(Easing.cubic) }, () => {
+        shimmerOpacity.value = withTiming(0, { duration: 1000, easing: Easing.in(Easing.cubic) });
+      });
+      shimmerPosition.value = withTiming(containerWidth.value * 2, { duration: 1500 });
     },
   }), [reducedMotion]);
 
@@ -104,10 +130,12 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
     };
   }, [reducedMotion]);
 
-  // Cleanup ripple animation on unmount
+  // Cleanup ripple and shimmer animations on unmount
   useEffect(() => {
     return () => {
       cancelAnimation(rippleAmplitude);
+      cancelAnimation(shimmerPosition);
+      cancelAnimation(shimmerOpacity);
     };
   }, []);
 
@@ -169,6 +197,15 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
     return { d };
   });
 
+  // Shimmer overlay — sweeps left-to-right on goal hit
+  const shimmerProps = useAnimatedProps(() => ({
+    x: shimmerPosition.value,
+    y: 0,
+    width: containerWidth.value * 0.3,
+    height: containerHeight.value,
+    opacity: shimmerOpacity.value,
+  }));
+
   return (
     <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
       <Defs>
@@ -195,6 +232,9 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
         opacity={LAYER_CONFIG[0].opacity}
         clipPath="url(#water-clip)"
       />
+
+      {/* Shimmer overlay — white highlight sweeps across on goal hit */}
+      <AnimatedRect animatedProps={shimmerProps} fill="#ffffff" clipPath="url(#water-clip)" />
     </Svg>
   );
 });

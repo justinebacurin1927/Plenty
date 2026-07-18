@@ -101,6 +101,10 @@ const withSequence = (..._animations) => 0;
 const withDelay = (_delayMs, nextAnimation) => nextAnimation;
 const cancelAnimation = NOOP;
 
+// ── Thread bridging ──
+
+const runOnJS = (fn) => fn;
+
 // ── Easing ──
 
 const Easing = {
@@ -192,6 +196,7 @@ export { useEvent };
 export { useAnimatedRef };
 export { useAnimatedScrollHandler };
 export { cancelAnimation };
+export { runOnJS };
 export { withTiming };
 export { withSpring };
 export { withDecay };
