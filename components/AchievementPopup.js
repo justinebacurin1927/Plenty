@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, Animated, StyleSheet, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
+import { useReducedMotion } from "../utils/motion";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -13,6 +14,8 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReducedMotion();
+  const autoDismissRef = useRef(null);
   const confettiRefs = useRef(
     Array.from({ length: 8 }, () => ({
       translateY: new Animated.Value(0),
@@ -38,9 +41,26 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
       scaleAnim.setValue(0);
       fadeAnim.setValue(0);
     }
+    return () => {
+      if (autoDismissRef.current) {
+        clearTimeout(autoDismissRef.current);
+        autoDismissRef.current = null;
+      }
+    };
   }, [visible, currentIndex, queue.length]);
 
   function animateIn() {
+    if (reduceMotion) {
+      // Reduced motion: set final state directly, skip all animations
+      scaleAnim.setValue(1);
+      fadeAnim.setValue(1);
+      const timer = setTimeout(() => {
+        handleDismiss();
+      }, 2000);
+      autoDismissRef.current = timer;
+      return;
+    }
+
     scaleAnim.setValue(0);
     fadeAnim.setValue(0);
     confettiRefs.forEach((c) => {
@@ -99,9 +119,10 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
       ]).start();
     });
 
-    setTimeout(() => {
+    const animateTimer = setTimeout(() => {
       handleDismiss();
     }, 4000);
+    autoDismissRef.current = animateTimer;
   }
 
   function handleDismiss() {

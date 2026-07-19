@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   Alert,
   Modal,
   Linking,
@@ -14,12 +13,12 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Svg, { Path } from "react-native-svg";
 import Mascot, { getRandomMessage, streakToExpression } from "../components/Mascot";
 import AchievementPopup from "../components/AchievementPopup";
 import WeatherBanner from "../components/WeatherBanner";
 import { getTodayLogs, addLog, getSettings, getStreak, getLogs, saveSettings, checkMissedDay, useFreeze } from "../utils/storage";
 import { checkAchievements } from "../utils/achievements";
-import { getPeakHoursSummary } from "../utils/patterns";
 import {
   requestPermission,
   scheduleWaterReminder,
@@ -32,35 +31,55 @@ import { useTheme } from "../context/ThemeContext";
 import { refreshWidget } from "../utils/widget";
 import { ShareCardForwardRef } from "../components/ShareCard";
 import { captureAndShare } from "../utils/share";
-import Heatmap from "../components/Heatmap";
 import { useCountUp, useReducedMotion } from "../utils/motion";
 import { triggerHaptic, ImpactFeedbackStyle } from "../utils/haptics";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import StreakFlame from "../components/StreakFlame";
 import WaterFill from "../components/WaterFill";
 import PressableScale from "../components/PressableScale";
+import Toast from "../components/Toast";
+import { type, fontSize, lineHeight } from "../constants/typography";
+import { space } from "../constants/spacing";
 
-const PRESET_MINUTES = [1, 5, 15, 30, 60, 120];
-
-function parseInterval(text) {
-  if (!text) return null;
-  const m = text.trim().match(/^(\d+)\s*(s|m|h)$/);
-  if (!m) return null;
-  const val = parseInt(m[1], 10);
-  if (val <= 0) return null;
-  if (m[2] === "s") return val;
-  if (m[2] === "m") return val * 60;
-  if (m[2] === "h") return val * 3600;
-  return null;
-}
-
-function formatInterval(sec) {
-  if (sec >= 3600 && sec % 3600 === 0) return `${sec / 3600}h`;
-  if (sec >= 60 && sec % 60 === 0) return `${sec / 60}m`;
-  return `${sec}s`;
-}
+const REMIND_OPTIONS = [
+  { minutes: 30, label: "30 mins" },
+  { minutes: 60, label: "1 hr" },
+  { minutes: 120, label: "2 hrs" },
+  { minutes: 150, label: "2 hrs & 30 mins" },
+];
 
 const AMOUNT_OPTIONS = [100, 200, 250, 500];
+
+/** Tiny SVG glass icon — drinking glass shape */
+function GlassIcon({ filled, color, emptyColor, size = 16 }) {
+  const s = size;
+  const vw = 20;
+  const vh = 26;
+  const scale = s / vw;
+  return (
+    <Svg width={s} height={Math.round(vh * scale)} viewBox={`0 0 ${vw} ${vh}`}>
+      {filled ? (
+        <Path
+          d="M4,2 L3,18 C3,20 6,24 10,24 C14,24 17,20 17,18 L16,2 Z"
+          fill={color}
+          stroke={color}
+          strokeWidth={1.2}
+          strokeLinejoin="round"
+          opacity={0.9}
+        />
+      ) : (
+        <Path
+          d="M4,2 L3,18 C3,20 6,24 10,24 C14,24 17,20 17,18 L16,2 Z"
+          fill="none"
+          stroke={emptyColor || "#CBD5E1"}
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+          opacity={0.5}
+        />
+      )}
+    </Svg>
+  );
+}
 
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
@@ -72,24 +91,25 @@ export default function HomeScreen({ navigation }) {
   const [drinkAmount, setDrinkAmount] = useState(250);
   const [streak, setStreak] = useState(0);
   const [selectedInterval, setSelectedInterval] = useState(1800);
-  const [customText, setCustomText] = useState("");
   const [isActive, setIsActive] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(null);
   const [intervalError, setIntervalError] = useState("");
   const [showAmountPicker, setShowAmountPicker] = useState(false);
   const [mascotExpression, setMascotExpression] = useState("happy");
-  const [mascotMessage, setMascotMessage] = useState(null);
+  const [mascotMessage, setMascotMessage] = useState("Stay hydrated!");
   const [popupAchievements, setPopupAchievements] = useState([]);
   const [escalationTier, setEscalationTier] = useState("normal");
   const [mascotCelebration, setMascotCelebration] = useState(false);
   const [mascotVariant, setMascotVariant] = useState("classic");
-  const [peakTimeHint, setPeakTimeHint] = useState(null);
   const [hasWeatherLocation, setHasWeatherLocation] = useState(false);
   const [weatherLat, setWeatherLat] = useState(null);
   const [weatherLon, setWeatherLon] = useState(null);
   const [goalSuggestion, setGoalSuggestion] = useState(null);
   const [activityEnabled, setActivityEnabled] = useState(false);
   const [freezePrompt, setFreezePrompt] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [showStreakBanner, setShowStreakBanner] = useState(true);
+  const [showWeatherBanner, setShowWeatherBanner] = useState(true);
   const streakCardRef = React.useRef(null);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
   const lastLogRef = React.useRef(0);
@@ -118,9 +138,6 @@ export default function HomeScreen({ navigation }) {
     setActivityEnabled(settings.activityAdjustment || false);
     const savedIntervalSec = Math.round((settings.intervalMinutes || 30) * 60);
     setSelectedInterval(savedIntervalSec);
-    setCustomText(
-      PRESET_MINUTES.includes(savedIntervalSec / 60) ? "" : formatInterval(savedIntervalSec)
-    );
     const logs = await getTodayLogs();
     const totalMl = logs.reduce((sum, entry) => sum + (entry.amount || 250), 0);
     setTodayCount(logs.length);
@@ -131,12 +148,6 @@ export default function HomeScreen({ navigation }) {
     setMascotExpression(streakToExpression(strk));
     const tier = await getEscalationTier();
     setEscalationTier(tier);
-
-    try {
-      const allLogs = await getLogs();
-      const hint = getPeakHoursSummary(allLogs);
-      setPeakTimeHint(hint);
-    } catch (e) {}
 
     try {
       const allLogs = await getLogs();
@@ -208,7 +219,6 @@ export default function HomeScreen({ navigation }) {
     const ok = await useFreeze(freezePrompt.dateStr);
     if (ok) {
       setFreezePrompt(null);
-      // Refresh to update the streak display
       await loadData();
     }
   };
@@ -238,7 +248,7 @@ export default function HomeScreen({ navigation }) {
         setIntervalError("Minimum interval is 60 seconds on Android");
         return;
       }
-      console.log(`Scheduling reminders every ${formatInterval(selectedInterval)}`);
+      console.log(`Scheduling reminders every ${selectedInterval >= 3600 ? `${selectedInterval / 3600}h` : `${selectedInterval / 60}m`}`);
       await saveSettings({ intervalMinutes: selectedInterval / 60, remindersActive: true });
       const settings = await getSettings();
       await scheduleWaterReminder(selectedInterval, {
@@ -269,12 +279,11 @@ export default function HomeScreen({ navigation }) {
   const logDrink = useCallback(
     async (amount) => {
       const now = Date.now();
-      if (now - lastLogRef.current < 500) return; // debounce
+      if (now - lastLogRef.current < 500) return;
       lastLogRef.current = now;
 
       await addLog({ amount });
-      // Android fallback vibration — only fires when reduced motion is on
-      // (haptic fires at the PressableScale call site instead)
+      setToastMessage(`+${amount}ml logged!`);
       if (!reducedMotion) Vibration.vibrate(50);
       setTodayCount((c) => c + 1);
       setTodayMl((m) => m + amount);
@@ -293,7 +302,6 @@ export default function HomeScreen({ navigation }) {
         console.log(`Unlocked: ${newlyUnlocked.map((a) => a.title).join(", ")}`);
       }
 
-      // Update home screen widget
       refreshWidget({
         currentMl: todayMl + amount,
         goalMl: dailyGoal * 250,
@@ -301,12 +309,8 @@ export default function HomeScreen({ navigation }) {
         glassesCount: Math.round((todayMl + amount) / 250),
       }).catch(() => {});
 
-      // Check for streak milestone celebration (fire-and-forget — internal error handling)
       scheduleMilestoneCelebration();
-
-      // Trigger the water ripple animation
       waterFillRef.current?.triggerRipple();
-
     },
     [todayMl, dailyGoal, reducedMotion]
   );
@@ -318,7 +322,6 @@ export default function HomeScreen({ navigation }) {
         const reminders = await getScheduledReminders();
 
         if (settings.remindersActive && reminders.length === 0) {
-          // Re-arm: reminders should be active but none found (app restart, reboot, or data loss)
           console.log("Re-arming reminders on app start");
           console.log(`Requesting notification permission...`);
           const granted = await requestPermission();
@@ -332,7 +335,6 @@ export default function HomeScreen({ navigation }) {
             setIsActive(true);
             console.log("Reminders re-armed successfully");
           } else {
-            // Permission lost — update the persisted flag to match reality
             await saveSettings({ remindersActive: false });
             console.warn("Permission lost — reminders deactivated");
           }
@@ -354,8 +356,6 @@ export default function HomeScreen({ navigation }) {
       return EXPRESSIONS[(idx + 1) % EXPRESSIONS.length];
     });
     setMascotMessage(getRandomMessage());
-    if (window._mascotTimer) clearTimeout(window._mascotTimer);
-    window._mascotTimer = setTimeout(() => setMascotMessage(null), 2500);
   }, []);
 
   const goalMl = React.useMemo(() => dailyGoal * 250, [dailyGoal]);
@@ -370,6 +370,15 @@ export default function HomeScreen({ navigation }) {
 
   const { displayText } = useCountUp(todayMl);
 
+  // Glass-shaped clip path for WaterFill — wider at top, narrower at bottom
+  const W = waterWidth;
+  const H = 200;
+  const glassClipPath = useMemo(() => (
+    <Path
+      d={`M${W * 0.08},0 L${W * 0.22},${H - 14} L${W * 0.2},${H} L${W * 0.8},${H} L${W * 0.78},${H - 14} L${W * 0.92},0 Z`}
+    />
+  ), [W, H]);
+
   // ── Goal celebration gate ──
   const goalReachedScale = useSharedValue(0);
   const goalReachedOpacity = useSharedValue(0);
@@ -379,14 +388,11 @@ export default function HomeScreen({ navigation }) {
     opacity: goalReachedOpacity.value,
   }));
 
-  // Watch progressPct for first crossing of 100%
-  // Uses mountGuard to prevent celebration on initial render if already >= 100%
-  // eslint-disable-next-line react-hooks/exhaustive-deps — refs/shared-values are stable; don't trigger re-run
   useEffect(() => {
     if (mountGuard.current) {
       mountGuard.current = false;
       if (progressPct >= 1) {
-        goalHitRef.current = true; // Already met on load — lock gate without triggering
+        goalHitRef.current = true;
         goalReachedScale.value = 1;
         goalReachedOpacity.value = 1;
       }
@@ -398,11 +404,9 @@ export default function HomeScreen({ navigation }) {
       waterFillRef.current?.triggerGoalCelebration();
 
       if (!reducedMotion) {
-        // Push synthetic achievement to trigger confetti + popup
-        // Use functional updater to preserve any real achievements just unlocked
         setPopupAchievements(prev => {
           if (prev.some(a => a.title === "Goal Reached!")) return prev;
-          return [...prev, { title: "Goal Reached!", emoji: "🎉", description: "You hit your daily hydration goal!" }];
+          return [...prev, { title: "Goal Reached!", emoji: "", description: "You hit your daily hydration goal!" }];
         });
 
         goalReachedScale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.back(1.5)) });
@@ -414,8 +418,6 @@ export default function HomeScreen({ navigation }) {
     }
   }, [progressPct, reducedMotion]);
 
-  // Reset gate on new day (todayMl drops to 0)
-  // eslint-disable-next-line react-hooks/exhaustive-deps — refs/shared-values are stable; don't trigger re-run
   useEffect(() => {
     if (todayMl === 0) {
       goalHitRef.current = false;
@@ -427,30 +429,26 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={s.container}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        {/* ── Header: bigger mascot + "Plenty" title + cloud bubble below title ── */}
         <View style={s.header}>
-          <View style={s.mascotArea}>
-            <Mascot size={100} expression={mascotExpression} variant={mascotVariant} celebration={mascotCelebration} onPress={cycleExpression} message={mascotMessage} />
-          </View>
-          <View>
+          <Mascot
+            size={140}
+            expression={mascotExpression}
+            variant={mascotVariant}
+            celebration={mascotCelebration}
+            onPress={cycleExpression}
+          />
+          <View style={s.headerRight}>
             <Text style={s.title}>Plenty</Text>
-            <Text style={s.subtitle}>Stay hydrated</Text>
+            <View style={[s.cloudBubble, { backgroundColor: colors.surface }]}>
+              <Text style={[s.cloudBubbleText, { color: colors.primary }]}>
+                {mascotMessage}
+              </Text>
+            </View>
+            {/* Bubble tail — points up/left toward the mascot */}
+            <View style={[s.cloudTail, { borderBottomColor: colors.surface }]} />
           </View>
         </View>
-
-        {streak > 0 && (
-          <View style={s.streakBadge}>
-            <StreakFlame streakLength={streak} />
-            <Text style={s.streakText}>{streak} day{streak > 1 ? "s" : ""}</Text>
-            <TouchableOpacity
-              style={s.shareStreakBtn}
-              onPress={async () => {
-                await captureAndShare(streakCardRef, "My Plenty streak!");
-              }}
-            >
-              <Ionicons name="share-outline" size={16} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* Hidden share card for streak screenshot */}
         <ShareCardForwardRef
@@ -464,19 +462,42 @@ export default function HomeScreen({ navigation }) {
           }}
         />
 
-        {peakTimeHint && (
-          <View style={s.peakHint}>
-            <Ionicons name="time-outline" size={14} color={colors.primary} />
-            <Text style={s.peakHintText}>{peakTimeHint}</Text>
+        {/* ── Streak Banner (dismissable) ── */}
+        {showStreakBanner && streak > 0 && (
+          <View style={s.streakBadge}>
+            <StreakFlame streakLength={streak} />
+            <Text style={s.streakText}>{streak} day{streak > 1 ? "s" : ""}</Text>
+            <TouchableOpacity
+              style={s.shareStreakBtn}
+              onPress={async () => {
+                await captureAndShare(streakCardRef, "My Plenty streak!");
+              }}
+            >
+              <Ionicons name="share-outline" size={16} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.dismissBtn}
+              onPress={() => setShowStreakBanner(false)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="close" size={18} color={colors.warning} />
+            </TouchableOpacity>
           </View>
         )}
 
-        <WeatherBanner
-          hasLocation={hasWeatherLocation}
-          lat={weatherLat}
-          lon={weatherLon}
-        />
+        {/* ── Weather Banner (dismiss inside the component) ── */}
+        {showWeatherBanner && (
+          <View style={s.weatherRow}>
+            <WeatherBanner
+              hasLocation={hasWeatherLocation}
+              lat={weatherLat}
+              lon={weatherLon}
+              onDismiss={() => setShowWeatherBanner(false)}
+            />
+          </View>
+        )}
 
+        {/* ── Escalation Banner ── */}
         {escalationTier !== "normal" && (
           <View style={[s.escalationBanner, escalationTier === "alert" ? s.escalationAlert : s.escalationWarning]}>
             <Ionicons name={escalationTier === "alert" ? "alert-circle" : "warning"} size={18} color="#fff" />
@@ -488,6 +509,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
+        {/* ── Water Progress Card ── */}
         <View style={s.progressCard}>
           <View style={s.progressHeader}>
             <Ionicons name="water" size={32} color={colors.primary} />
@@ -496,17 +518,51 @@ export default function HomeScreen({ navigation }) {
           <Text style={s.progressLabel}>
             {glassesFromMl} / {dailyGoal} glasses
           </Text>
-          <View style={s.waterContainer} onLayout={handleWaterLayout}>
-            <WaterFill ref={waterFillRef} fill={progressPct} width={waterWidth} height={200} />
+
+          {/* Glass-shaped icons — one per daily goal */}
+          <View style={s.glassesRow}>
+            {Array.from({ length: Math.min(dailyGoal, 16) }, (_, i) => (
+              <GlassIcon
+                key={i}
+                filled={i < glassesFromMl}
+                color={colors.primary}
+                emptyColor={colors.border}
+                size={16}
+              />
+            ))}
+          </View>
+
+          <View style={s.waterGlassOuter}>
+            <View style={s.waterContainer} onLayout={handleWaterLayout}>
+              <WaterFill ref={waterFillRef} fill={progressPct} width={waterWidth} height={200} clipPathDef={glassClipPath} />
+            </View>
+            {/* Glass outline overlay */}
+            <Svg
+              width={waterWidth}
+              height={200}
+              viewBox={`0 0 ${waterWidth} 200`}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            >
+              <Path
+                d={`M${W * 0.08},0 L${W * 0.22},${200 - 14} L${W * 0.2},${200} L${W * 0.8},${200} L${W * 0.78},${200 - 14} L${W * 0.92},0 Z`}
+                fill="none"
+                stroke={colors.border}
+                strokeWidth={2.5}
+                strokeLinejoin="round"
+                opacity={0.6}
+              />
+            </Svg>
           </View>
           {progressPct >= 1 && (
-            <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }, goalReachedStyle]}>
+            <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: space("xsm"), marginTop: space("sm") }, goalReachedStyle]}>
               <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-              <Text style={s.goalMet}>Goal reached! 🎉</Text>
+              <Text style={s.goalMet}>Goal reached!</Text>
             </Animated.View>
           )}
         </View>
 
+        {/* ── Activity Hint ── */}
         {activityEnabled && (
           <View style={s.activityHint}>
             <Ionicons name="fitness" size={14} color={colors.success} />
@@ -516,6 +572,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
+        {/* ── Goal Suggestion ── */}
         {goalSuggestion && (
           <View style={s.goalSuggestion}>
             <Ionicons name="bulb-outline" size={16} color={colors.primary} />
@@ -523,7 +580,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        {/* Freeze prompt */}
+        {/* ── Freeze prompt ── */}
         {freezePrompt && (
           <Modal transparent animationType="fade" visible={!!freezePrompt}>
             <View style={s.freezeOverlay}>
@@ -559,97 +616,7 @@ export default function HomeScreen({ navigation }) {
           </Modal>
         )}
 
-        {/* Heatmap */}
-        <View style={[s.card, { backgroundColor: colors.surface }]}>
-          <Heatmap goalGlasses={dailyGoal} />
-        </View>
-
-        <View style={s.section}>
-          <Text style={s.sectionLabel}>Remind me every</Text>
-          <View style={s.intervalRow}>
-            {PRESET_MINUTES.map((min) => {
-              const sec = min * 60;
-              return (
-                <TouchableOpacity
-                  key={min}
-                  style={[
-                    s.intervalChip,
-                    selectedInterval === sec && !customText && s.intervalChipActive,
-                  ]}
-                  onPress={async () => {
-                    setSelectedInterval(sec);
-                    setCustomText("");
-                    setIntervalError("");
-                    try {
-                      await saveSettings({ intervalMinutes: sec / 60 });
-                    } catch (e) {
-                      console.error("Failed to save interval:", e.message);
-                    }
-                  }}
-                >
-                  <Text
-                    style={[
-                      s.intervalText,
-                      selectedInterval === sec && !customText && s.intervalTextActive,
-                    ]}
-                  >
-                    {min < 60 ? `${min}m` : `${min / 60}h`}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-            <TextInput
-              style={[
-                s.customInput,
-                customText ? s.customInputActive : null,
-              ]}
-              placeholder="ex: 30s"
-              placeholderTextColor={colors.textTertiary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={customText}
-              onChangeText={async (t) => {
-                setCustomText(t);
-                setIntervalError("");
-                const parsed = parseInterval(t);
-                if (parsed !== null) {
-                  setSelectedInterval(parsed);
-                  try {
-                    await saveSettings({ intervalMinutes: parsed / 60 });
-                  } catch (e) {
-                    console.error("Failed to save interval:", e.message);
-                  }
-                }
-              }}
-            />
-          </View>
-          {customText && parseInterval(customText) === null && customText.length > 0 && (
-            <Text style={s.inputHint}>Use 30s, 5m, or 2h</Text>
-          )}
-          {intervalError ? (
-            <Text style={s.inputHint}>{intervalError}</Text>
-          ) : null}
-        </View>
-
-        <PressableScale
-          style={[s.mainButton, isActive ? s.stopButton : s.startButton]}
-          onPress={() => {
-            if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Medium);
-            return isActive ? stopReminder() : startReminder();
-          }}
-          accessibilityLabel={isActive ? "Stop reminders" : "Start reminders"}
-          accessibilityRole="button"
-        >
-          <Ionicons
-            name={isActive ? "pause-circle" : "notifications"}
-            size={28}
-            color="#fff"
-          />
-          <Text style={s.mainButtonText}>
-            {isActive ? "Stop Reminders" : "Start Reminders"}
-          </Text>
-        </PressableScale>
-
+        {/* ── I Drank Water Button ── */}
         <PressableScale
           style={s.drinkButton}
           onPress={() => {
@@ -664,9 +631,74 @@ export default function HomeScreen({ navigation }) {
           accessibilityLabel={`Log water drink, ${drinkAmount} milliliters`}
           accessibilityRole="button"
         >
-          <Ionicons name="add-circle" size={24} color={colors.primary} />
+          <Ionicons name="add-circle" size={24} color="#fff" />
           <Text style={s.drinkButtonText}>I drank water ({drinkAmount}ml)</Text>
         </PressableScale>
+
+        {/* ── Start / Stop Reminder Button ── */}
+        <View style={s.mainButtonOuter}>
+          <PressableScale
+            style={[s.mainButton, isActive ? s.stopButton : s.startButton]}
+            onPress={() => {
+              if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Medium);
+              return isActive ? stopReminder() : startReminder();
+            }}
+            accessibilityLabel={isActive ? "Stop reminders" : "Start reminders"}
+            accessibilityRole="button"
+          >
+            <View style={s.mainButtonInner}>
+              <Ionicons
+                name={isActive ? "pause-circle" : "notifications"}
+                size={28}
+                color="#fff"
+              />
+              <Text style={s.mainButtonText}>
+                {isActive ? "Stop Reminders" : "Start Reminders"}
+              </Text>
+            </View>
+          </PressableScale>
+        </View>
+
+        {/* ── Remind Me Section (4 preset buttons, 2×2 grid) ── */}
+        <View style={s.section}>
+          <Text style={s.sectionLabel}>Remind me every</Text>
+          <View style={s.intervalGrid}>
+            {REMIND_OPTIONS.map((option) => {
+              const sec = option.minutes * 60;
+              const isActiveOpt = selectedInterval === sec;
+              return (
+                <TouchableOpacity
+                  key={option.minutes}
+                  style={[
+                    s.intervalChip,
+                    isActiveOpt && s.intervalChipActive,
+                  ]}
+                  onPress={async () => {
+                    setSelectedInterval(sec);
+                    setIntervalError("");
+                    try {
+                      await saveSettings({ intervalMinutes: option.minutes });
+                    } catch (e) {
+                      console.error("Failed to save interval:", e.message);
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      s.intervalText,
+                      isActiveOpt && s.intervalTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          {intervalError ? (
+            <Text style={s.inputHint}>{intervalError}</Text>
+          ) : null}
+        </View>
 
         {permissionGranted === false && (
           <View style={s.warningBlock}>
@@ -683,7 +715,7 @@ export default function HomeScreen({ navigation }) {
         )}
       </ScrollView>
 
-      <Modal visible={showAmountPicker} transparent animationType="fade">
+      <Modal visible={showAmountPicker} transparent animationType="slide">
         <TouchableOpacity
           style={s.modalOverlay}
           activeOpacity={1}
@@ -724,6 +756,12 @@ export default function HomeScreen({ navigation }) {
         visible={popupAchievements.length > 0}
         onDismiss={() => setPopupAchievements([])}
       />
+
+      <Toast
+        message={toastMessage}
+        visible={!!toastMessage}
+        onDismiss={() => setToastMessage(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -736,80 +774,93 @@ function makeStyles(colors) {
     },
     scroll: {
       alignItems: "center",
-      paddingHorizontal: 24,
+      paddingHorizontal: space("xl"),
       paddingTop: 80,
-      paddingBottom: 40,
+      paddingBottom: space("3xl"),
     },
     header: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 16,
+      gap: space("lg"),
       width: "100%",
       justifyContent: "center",
     },
-    mascotArea: {
-      alignItems: "center",
+    headerRight: {
+      position: "relative",
     },
     title: {
-      fontSize: 36,
-      fontWeight: "700",
+      ...type.display,
       color: colors.text,
       letterSpacing: 1,
     },
-    subtitle: {
-      fontSize: 16,
-      color: colors.textSecondary,
-      marginTop: 4,
+    cloudBubble: {
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      marginTop: 6,
+      maxWidth: 180,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      elevation: 4,
+    },
+    cloudBubbleText: {
+      fontSize: 13,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    cloudTail: {
+      position: "absolute",
+      top: 36,
+      left: -10,
+      width: 0,
+      height: 0,
+      borderLeftWidth: 8,
+      borderRightWidth: 8,
+      borderBottomWidth: 10,
+      borderLeftColor: "transparent",
+      borderRightColor: "transparent",
     },
     streakBadge: {
-      marginTop: 16,
+      marginTop: space("lg"),
       backgroundColor: colors.warningBg,
-      paddingVertical: 6,
-      paddingHorizontal: 16,
-      borderRadius: 20,
+      paddingVertical: space("xsm"),
+      paddingHorizontal: space("lg"),
+      borderRadius: space("lgx"),
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
+      gap: space("sm"),
     },
     streakText: {
-      fontSize: 15,
-      fontWeight: "700",
+      ...type.label,
       color: colors.warning,
     },
     shareStreakBtn: {
       backgroundColor: "rgba(255,255,255,0.2)",
-      borderRadius: 12,
+      borderRadius: space("md"),
       width: 26,
       height: 26,
       alignItems: "center",
       justifyContent: "center",
     },
-    peakHint: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      marginTop: 10,
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      backgroundColor: colors.primaryBg,
-      borderRadius: 10,
-      width: "100%",
+    dismissBtn: {
+      marginLeft: "auto",
+      paddingLeft: space("xsm"),
     },
-    peakHintText: {
-      fontSize: 13,
-      fontWeight: "600",
-      color: colors.primary,
-      flex: 1,
+    weatherRow: {
+      width: "100%",
+      marginTop: space("smd"),
     },
     escalationBanner: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
+      gap: space("sm"),
       width: "100%",
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      borderRadius: 12,
-      marginTop: 12,
+      paddingVertical: space("smd"),
+      paddingHorizontal: space("lg"),
+      borderRadius: space("md"),
+      marginTop: space("md"),
     },
     escalationWarning: {
       backgroundColor: colors.highBg,
@@ -818,19 +869,19 @@ function makeStyles(colors) {
       backgroundColor: colors.extremeBg,
     },
     escalationText: {
-      fontSize: 13,
+      fontSize: fontSize("caption"),
       fontWeight: "600",
       color: "#fff",
       flex: 1,
     },
     progressCard: {
       backgroundColor: colors.surface,
-      borderRadius: 20,
-      paddingVertical: 24,
-      paddingHorizontal: 32,
+      borderRadius: space("lgx"),
+      paddingVertical: space("xl"),
+      paddingHorizontal: space("2xl"),
       alignItems: "center",
       width: "100%",
-      marginTop: 20,
+      marginTop: space("lgx"),
       shadowColor: colors.primary,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.12,
@@ -840,140 +891,130 @@ function makeStyles(colors) {
     progressHeader: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
+      gap: space("sm"),
     },
     progressCount: {
-      fontSize: 36,
-      fontWeight: "800",
+      ...type.display,
       color: colors.text,
     },
     progressLabel: {
-      fontSize: 16,
+      fontSize: fontSize("body"),
       color: colors.textSecondary,
-      marginTop: 4,
-      marginBottom: 12,
+      marginTop: space("xs"),
+    },
+    glassesRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: 6,
+      marginTop: space("sm"),
+      marginBottom: space("md"),
+    },
+    waterGlassOuter: {
+      position: "relative",
+      width: "100%",
+      height: 200,
+      marginTop: space("md"),
     },
     waterContainer: {
       width: "100%",
       height: 200,
-      borderRadius: 12,
-      overflow: "hidden",
-      marginTop: 12,
     },
     goalMet: {
-      fontSize: 15,
-      fontWeight: "700",
+      ...type.label,
       color: colors.success,
-      marginTop: 8,
+      marginTop: space("sm"),
     },
     activityHint: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
-      marginTop: 12,
-      paddingVertical: 6,
-      paddingHorizontal: 14,
+      gap: space("xsm"),
+      marginTop: space("md"),
+      paddingVertical: space("xsm"),
+      paddingHorizontal: space("lgm"),
       backgroundColor: colors.successBg,
-      borderRadius: 10,
+      borderRadius: space("smd"),
     },
     activityHintText: {
-      fontSize: 12,
+      fontSize: fontSize("small"),
       fontWeight: "600",
       color: colors.success,
     },
     goalSuggestion: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
-      marginTop: 10,
-      paddingVertical: 10,
-      paddingHorizontal: 16,
+      gap: space("sm"),
+      marginTop: space("smd"),
+      paddingVertical: space("smd"),
+      paddingHorizontal: space("lg"),
       backgroundColor: colors.goalSuggestionBg,
-      borderRadius: 12,
+      borderRadius: space("md"),
       width: "100%",
     },
     goalSuggestionText: {
-      fontSize: 13,
+      fontSize: fontSize("caption"),
       fontWeight: "600",
       color: colors.goalSuggestionText,
       flex: 1,
     },
-    card: {
-      borderRadius: 16,
-      paddingVertical: 6,
-      paddingHorizontal: 6,
-      marginTop: 16,
-      width: "100%",
-      maxWidth: 360,
-      alignItems: "center",
-    },
     section: {
-      marginTop: 28,
+      marginTop: space("xl") + 4,
       alignItems: "center",
+      width: "100%",
     },
     sectionLabel: {
-      fontSize: 15,
+      fontSize: fontSize("label"),
       fontWeight: "600",
       color: colors.textSection,
-      marginBottom: 10,
+      marginBottom: space("smd"),
     },
-    intervalRow: {
+    intervalGrid: {
       flexDirection: "row",
-      gap: 10,
       flexWrap: "wrap",
       justifyContent: "center",
+      gap: space("md"),
+      width: "100%",
+      maxWidth: 340,
     },
     intervalChip: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 20,
+      width: "46%",
+      paddingVertical: space("md"),
+      borderRadius: space("lgx"),
       backgroundColor: colors.surface,
       borderWidth: 1.5,
       borderColor: colors.border,
+      alignItems: "center",
     },
     intervalChipActive: {
       backgroundColor: colors.primary,
       borderColor: colors.primary,
     },
     intervalText: {
-      fontSize: 14,
+      fontSize: fontSize("body"),
       fontWeight: "600",
       color: colors.textSection,
     },
     intervalTextActive: {
       color: "#fff",
     },
-    customInput: {
-      width: 64,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 20,
-      backgroundColor: colors.surface,
-      borderWidth: 1.5,
-      borderColor: colors.border,
-      fontSize: 14,
-      fontWeight: "600",
-      color: colors.textSection,
-      textAlign: "center",
-    },
-    customInputActive: {
-      borderColor: colors.primary,
-      backgroundColor: colors.primaryBg,
-    },
     inputHint: {
-      fontSize: 12,
+      fontSize: fontSize("small"),
       color: colors.error,
-      marginTop: 6,
+      marginTop: space("xsm"),
+    },
+    mainButtonOuter: {
+      width: "100%",
+      marginTop: space("xl") + 4,
     },
     mainButton: {
+      paddingVertical: space("lg"),
+      borderRadius: space("lg"),
+    },
+    mainButtonInner: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: 10,
-      width: "100%",
-      paddingVertical: 16,
-      borderRadius: 16,
-      marginTop: 28,
+      gap: space("smd"),
     },
     startButton: {
       backgroundColor: colors.primary,
@@ -982,46 +1023,49 @@ function makeStyles(colors) {
       backgroundColor: colors.error,
     },
     mainButtonText: {
-      fontSize: 18,
+      fontSize: fontSize("body"),
       fontWeight: "700",
       color: "#fff",
+      textAlign: "center",
     },
     drinkButton: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
-      marginTop: 16,
-      paddingVertical: 14,
-      paddingHorizontal: 24,
-      borderRadius: 12,
-      backgroundColor: colors.primaryBg,
+      justifyContent: "center",
+      gap: space("sm"),
+      marginTop: space("lg"),
+      paddingVertical: space("lgm"),
+      paddingHorizontal: space("xl"),
+      borderRadius: space("lg"),
+      width: "100%",
+      backgroundColor: colors.primary,
     },
     drinkButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: colors.primary,
+      fontSize: fontSize("body"),
+      fontWeight: "700",
+      color: "#fff",
     },
     warningBlock: {
       alignItems: "center",
-      marginTop: 16,
-      paddingHorizontal: 20,
+      marginTop: space("lg"),
+      paddingHorizontal: space("lgx"),
     },
     warning: {
       color: colors.error,
-      fontSize: 13,
+      fontSize: fontSize("caption"),
       textAlign: "center",
     },
     settingsLink: {
-      marginTop: 8,
-      paddingVertical: 8,
-      paddingHorizontal: 20,
+      marginTop: space("sm"),
+      paddingVertical: space("sm"),
+      paddingHorizontal: space("lgx"),
       backgroundColor: colors.primary,
-      borderRadius: 8,
+      borderRadius: space("sm"),
     },
     settingsLinkText: {
       color: "#fff",
       fontWeight: "600",
-      fontSize: 13,
+      fontSize: fontSize("caption"),
     },
     modalOverlay: {
       flex: 1,
@@ -1030,40 +1074,40 @@ function makeStyles(colors) {
     },
     modalSheet: {
       backgroundColor: colors.surface,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      padding: 24,
-      paddingBottom: 40,
+      borderTopLeftRadius: space("xl"),
+      borderTopRightRadius: space("xl"),
+      padding: space("xl"),
+      paddingBottom: space("3xl"),
     },
     modalTitle: {
-      fontSize: 18,
+      fontSize: fontSize("body"),
       fontWeight: "700",
       color: colors.text,
-      marginBottom: 16,
+      marginBottom: space("lg"),
       textAlign: "center",
     },
     modalOption: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
-      paddingVertical: 14,
-      paddingHorizontal: 16,
-      borderRadius: 12,
+      gap: space("md"),
+      paddingVertical: space("lgm"),
+      paddingHorizontal: space("lg"),
+      borderRadius: space("md"),
       backgroundColor: colors.surfaceSecondary,
-      marginBottom: 8,
+      marginBottom: space("sm"),
     },
     modalOptionText: {
-      fontSize: 16,
+      fontSize: fontSize("body"),
       fontWeight: "600",
       color: colors.text,
     },
     modalCancel: {
       alignItems: "center",
-      paddingVertical: 14,
-      marginTop: 4,
+      paddingVertical: space("lgm"),
+      marginTop: space("xs"),
     },
     modalCancelText: {
-      fontSize: 16,
+      fontSize: fontSize("body"),
       color: colors.textSecondary,
       fontWeight: "600",
     },
@@ -1074,55 +1118,54 @@ function makeStyles(colors) {
       backgroundColor: "rgba(0,0,0,0.5)",
       justifyContent: "center",
       alignItems: "center",
-      padding: 32,
+      padding: space("2xl"),
     },
     freezeModal: {
-      borderRadius: 20,
-      padding: 28,
+      borderRadius: space("lgx"),
+      padding: space("xl") + 4,
       alignItems: "center",
       maxWidth: 340,
       width: "100%",
     },
     freezeEmoji: {
       fontSize: 42,
-      marginBottom: 12,
+      marginBottom: space("md"),
     },
     freezeTitle: {
       fontSize: 20,
       fontWeight: "700",
-      marginBottom: 8,
+      marginBottom: space("sm"),
       textAlign: "center",
     },
     freezeDesc: {
-      fontSize: 15,
+      ...type.label,
       textAlign: "center",
-      lineHeight: 22,
-      marginBottom: 8,
+      marginBottom: space("sm"),
     },
     freezeCount: {
-      fontSize: 13,
-      marginBottom: 20,
+      fontSize: fontSize("caption"),
+      marginBottom: space("lgx"),
     },
     freezeActions: {
       width: "100%",
-      gap: 8,
+      gap: space("sm"),
     },
     freezeBtnPrimary: {
-      paddingVertical: 14,
-      borderRadius: 14,
+      paddingVertical: space("lgm"),
+      borderRadius: space("lgm"),
       alignItems: "center",
     },
     freezeBtnPrimaryText: {
       color: "#fff",
-      fontSize: 16,
+      fontSize: fontSize("body"),
       fontWeight: "700",
     },
     freezeBtnSkip: {
       alignItems: "center",
-      paddingVertical: 10,
+      paddingVertical: space("smd"),
     },
     freezeBtnSkipText: {
-      fontSize: 14,
+      fontSize: fontSize("caption"),
       fontWeight: "500",
     },
   });

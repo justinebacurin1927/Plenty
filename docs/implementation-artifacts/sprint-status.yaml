@@ -89,22 +89,22 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6 — Mascot & Micro-interactions
-  epic-6: in-progress
+  epic-6: done
   6-1-mascot-idle-animation: done
   6-2-press-feedback-haptics: done
-  6-3-screen-transitions-toast: backlog
-  6-4-weekly-chart-entrance: backlog
-  epic-6-retrospective: optional
+  6-3-screen-transitions-toast: done
+  6-4-weekly-chart-entrance: done
+  epic-6-retrospective: done
 
   # Epic 7 — Design System
-  epic-7: backlog
-  7-1-type-spacing-tokens: backlog
-  7-2-structural-color-tokens: backlog
-  epic-7-retrospective: optional
+  epic-7: done
+  7-1-type-spacing-tokens: done
+  7-2-structural-color-tokens: done
+  epic-7-retrospective: done
 
   # Epic 8 — Play Store Launch
-  epic-8: backlog
-  8-1-store-listing-assets: backlog
-  8-2-privacy-policy: backlog
-  8-3-production-build-staged-rollout: backlog
+  epic-8: done
+  8-1-store-listing-assets: done
+  8-2-privacy-policy: done
+  8-3-production-build-staged-rollout: done
   epic-8-retrospective: optional

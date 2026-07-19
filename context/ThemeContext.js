@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { useColorScheme } from "react-native";
-import { light, dark } from "../constants/colors";
+import { light, dark, radius } from "../constants/colors";
 import { getThemePreference, saveThemePreference } from "../utils/storage";
 
 const ThemeContext = createContext({
   isDark: false,
   colors: light,
+  radius,
+  elevation: light.elevation,
   themeMode: "auto", // "auto" | "light" | "dark"
   setThemeMode: () => {},
 });
@@ -46,11 +48,11 @@ export function ThemeProvider({ children }) {
 
   if (!loaded) {
     // Render children briefly so the app doesn't flash; colors default to light
-    return <ThemeContext.Provider value={{ isDark: false, colors: light, themeMode: "auto", setThemeMode }}>{children}</ThemeContext.Provider>;
+    return <ThemeContext.Provider value={{ isDark: false, colors: light, radius, elevation: light.elevation, themeMode: "auto", setThemeMode }}>{children}</ThemeContext.Provider>;
   }
 
   return (
-    <ThemeContext.Provider value={{ isDark, colors, themeMode, setThemeMode }}>
+    <ThemeContext.Provider value={{ isDark, colors, radius, elevation: colors.elevation, themeMode, setThemeMode }}>
       {children}
     </ThemeContext.Provider>
   );

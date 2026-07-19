@@ -37,7 +37,7 @@ import { useReducedMotion, DURATION } from "../utils/motion";
 const AnimatedPath = createAnimatedComponent(Path);
 const AnimatedRect = createAnimatedComponent(Rect);
 
-const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height = 400 }, ref) {
+const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height = 400, clipPathDef }, ref) {
   const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
 
@@ -210,7 +210,7 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
     <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
       <Defs>
         <ClipPath id="water-clip">
-          <Rect x={0} y={0} width={width} height={height} />
+          {clipPathDef || <Rect x={0} y={0} width={width} height={height} />}
         </ClipPath>
       </Defs>
 

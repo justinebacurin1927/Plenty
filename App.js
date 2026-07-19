@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { getOnboarded } from "./utils/storage";
+import { useReducedMotion } from "./utils/motion";
 
 // ═══ Logger — captures console.log/warn/error from boot ═══
 import "./utils/logger";
@@ -63,6 +64,7 @@ const TAB_ICONS = {
 function AppNavigator() {
   const { isDark, colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
 
   return (
     <NavigationContainer>
@@ -70,6 +72,7 @@ function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
+          ...(reducedMotion ? {} : { animation: "fade" }),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name={TAB_ICONS[route.name]} size={size} color={color} />
           ),

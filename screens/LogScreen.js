@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   View,
   Text,
+  Animated,
   FlatList,
   StyleSheet,
   SafeAreaView,
@@ -11,11 +12,15 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Mascot, { getRandomMessage } from "../components/Mascot";
 import MonthlyReport from "../components/MonthlyReport";
-import { getTodayLogs, getDailyTotals, getSettings, getLogs } from "../utils/storage";
+import Heatmap from "../components/Heatmap";
+import StreakFlame from "../components/StreakFlame";
+import { getTodayLogs, getDailyTotals, getSettings, getLogs, getStreak } from "../utils/storage";
 import { getLowestHydrationDay } from "../utils/patterns";
 import { useTheme } from "../context/ThemeContext";
+import { useReducedMotion } from "../utils/motion";
 
 const MAX_BAR = 200;
+const WEEKLY_BARS = 7;
 
 export default function LogScreen() {
   const { colors } = useTheme();
@@ -28,7 +33,59 @@ export default function LogScreen() {
   const [mascotExpression, setMascotExpression] = useState("happy");
   const [lowDayPattern, setLowDayPattern] = useState(null);
   const [mascotMessage, setMascotMessage] = useState(null);
+  const [dailyGoal, setDailyGoal] = useState(8);
+  const [streak, setStreak] = useState(0);
   const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
+  const reduceMotion = useReducedMotion();
+
+  // Stable animated values for bar entrance animation
+  const barAnimsRef = useRef(null);
+  if (!barAnimsRef.current) {
+    barAnimsRef.current = Array.from({ length: WEEKLY_BARS }, () => new Animated.Value(0));
+  }
+  const barAnims = barAnimsRef.current;
+
+  // Track whether entrance animation has ever played to avoid re-animating on tab re-focus
+  const hasAnimatedRef = useRef(false);
+
+  // Trigger staggered bar animation when weekly data loads
+  useEffect(() => {
+    if (weekly.length === 0) return;
+
+    const springs = [];
+
+    barAnims.forEach((anim, i) => {
+      if (i >= weekly.length) return;
+
+      const dayTotal = weekly[i]?.total ?? 0;
+      const ratio = maxTotal > 0 ? dayTotal / maxTotal : 0;
+      const targetHeight = Math.max(ratio * MAX_BAR, dayTotal > 0 ? 10 : 4);
+
+      if (reduceMotion || hasAnimatedRef.current) {
+        anim.setValue(targetHeight);
+      } else {
+        anim.stopAnimation(); // stop any in-flight from prior runs
+        anim.setValue(0);
+        const spring = Animated.spring(anim, {
+          toValue: targetHeight,
+          friction: 8,
+          tension: 40,
+          delay: i * 70,
+          useNativeDriver: false,
+        });
+        spring.start();
+        springs.push(spring);
+      }
+    });
+
+    if (!reduceMotion) {
+      hasAnimatedRef.current = true;
+    }
+
+    return () => {
+      springs.forEach((s) => s.stop());
+    };
+  }, [weekly, maxTotal, reduceMotion]);
 
   const cycleExpression = () => {
     setMascotExpression((prev) => {
@@ -50,6 +107,9 @@ export default function LogScreen() {
           setWeekly(days);
           const settings = await getSettings();
           setMascotVariant(settings.mascotVariant || "classic");
+          setDailyGoal(settings.dailyGoal || 8);
+          const strk = await getStreak(settings.dailyGoal);
+          setStreak(strk);
 
           try {
             const allLogs = await getLogs();
@@ -121,16 +181,15 @@ export default function LogScreen() {
           <Text style={s.weeklyTitle}>Last 7 Days</Text>
           <View style={s.chartRow}>
             {weekly.map((day, i) => {
-              const height = Math.max((day.total / maxTotal) * MAX_BAR, day.total > 0 ? 10 : 4);
               return (
                 <View key={i} style={s.barCol}>
                   <Text style={s.barValue}>{Math.round(day.total / 250)}</Text>
-                  <View style={[s.bar, { height }]}>
-                    <View
+                  <View style={[s.bar, { height: MAX_BAR }]}>
+                    <Animated.View
                       style={[
                         s.barFill,
                         {
-                          height: "100%",
+                          height: barAnims[i],
                           backgroundColor: i === 6 ? colors.barToday : colors.barDefault,
                         },
                       ]}
@@ -152,6 +211,20 @@ export default function LogScreen() {
           )}
         </View>
       )}
+
+      {/* Streak banner — full streak info for the Log Screen */}
+      {streak > 0 && (
+        <View style={s.logStreakBanner}>
+          <StreakFlame streakLength={streak} />
+          <Text style={s.logStreakText}>{streak} day streak 🔥</Text>
+        </View>
+      )}
+
+      {/* GitHub-style streak heatmap */}
+      <View style={[s.heatmapCard, { backgroundColor: colors.surface }]}>
+        <Text style={s.heatmapTitle}>Streak History</Text>
+        <Heatmap goalGlasses={dailyGoal} />
+      </View>
     </>
   );
 
@@ -223,15 +296,11 @@ function makeStyles(colors) {
     },
     weeklyCard: {
       backgroundColor: colors.surface,
-      borderRadius: 16,
+      borderRadius: colors.radius.xl,
       marginHorizontal: 24,
       marginBottom: 12,
       padding: 20,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+      ...colors.elevation[1],
     },
     weeklyTitle: {
       fontSize: 15,
@@ -257,14 +326,14 @@ function makeStyles(colors) {
     },
     bar: {
       width: 20,
-      borderRadius: 6,
+      borderRadius: colors.radius.sm,
       backgroundColor: colors.primaryBg,
       overflow: "hidden",
       justifyContent: "flex-end",
     },
     barFill: {
       width: "100%",
-      borderRadius: 6,
+      borderRadius: colors.radius.sm,
     },
     barLabel: {
       fontSize: 11,
@@ -323,13 +392,9 @@ function makeStyles(colors) {
       backgroundColor: colors.surface,
       paddingVertical: 14,
       paddingHorizontal: 18,
-      borderRadius: 14,
+      borderRadius: colors.radius.lg,
       marginTop: 10,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+      ...colors.elevation[1],
     },
     logLeft: {
       flexDirection: "row",
@@ -350,6 +415,38 @@ function makeStyles(colors) {
     logTime: {
       fontSize: 14,
       color: colors.textSecondary,
+    },
+    logStreakBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      marginHorizontal: 24,
+      marginBottom: 8,
+      backgroundColor: colors.warningBg,
+      borderRadius: colors.radius.lg,
+    },
+    logStreakText: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: colors.warning,
+    },
+    heatmapCard: {
+      borderRadius: colors.radius.xl,
+      marginHorizontal: 24,
+      marginBottom: 12,
+      padding: 8,
+      ...colors.elevation[1],
+    },
+    heatmapTitle: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: colors.text,
+      marginBottom: 4,
+      paddingHorizontal: 8,
+      paddingTop: 4,
     },
   });
 }

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Animated, StyleSheet } from "react-native
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { useReducedMotion } from "../utils/motion";
+import Svg, { Path, Ellipse, Circle, Defs, LinearGradient, Stop, RadialGradient } from "react-native-svg";
 
 export const BUBBLE_MESSAGES = [
   "Drink up!",
@@ -46,6 +47,107 @@ export function streakToExpression(streak) {
   return "happy";
 }
 
+/**
+ * SVG-based mascot body — glossy teardrop with no limbs, matching
+ * the floating_droplet_slime.svg design from the brand kit.
+ */
+function SvgBody({ size, expression, isBlinking, variant }) {
+  const w = size;
+  const h = size * 1.05;
+
+  function Eyes() {
+    if (isBlinking || expression === "sleepy") {
+      // Closed eyes — curved arcs
+      return (
+        <>
+          <Path d="M292,272 Q306,260 320,272" fill="none" stroke="#04342C" strokeWidth={4} strokeLinecap="round" />
+          <Path d="M360,272 Q374,260 388,272" fill="none" stroke="#04342C" strokeWidth={4} strokeLinecap="round" />
+        </>
+      );
+    }
+    if (expression === "reminding") {
+      // Wink — left closed, right open
+      return (
+        <>
+          <Path d="M292,272 Q306,260 320,272" fill="none" stroke="#04342C" strokeWidth={4} strokeLinecap="round" />
+          <Ellipse cx={374} cy={270} rx={9} ry={13} fill="#04342C" />
+          <Circle cx={377} cy={265} r={2.5} fill="#EFFFF9" />
+        </>
+      );
+    }
+    // Open eyes — big for "happier"/"excited", normal otherwise
+    const big = expression === "happier" || expression === "excited";
+    return (
+      <>
+        <Ellipse cx={306} cy={270} rx={big ? 11 : 9} ry={big ? 16 : 13} fill="#04342C" />
+        <Ellipse cx={374} cy={270} rx={big ? 11 : 9} ry={big ? 16 : 13} fill="#04342C" />
+        <Circle cx={big ? 310 : 309} cy={big ? 264 : 265} r={big ? 3 : 2.5} fill="#EFFFF9" />
+        <Circle cx={big ? 378 : 377} cy={big ? 264 : 265} r={big ? 3 : 2.5} fill="#EFFFF9" />
+      </>
+    );
+  }
+
+  function Mouth() {
+    if (expression === "excited") {
+      return <Ellipse cx={340} cy={312} rx={16} ry={10} fill="#04342C" />;
+    }
+    if (expression === "happier") {
+      return <Path d="M300,302 Q340,342 380,302" fill="none" stroke="#04342C" strokeWidth={4.5} strokeLinecap="round" />;
+    }
+    if (expression === "sleepy") {
+      return <Path d="M315,305 Q340,318 365,305" fill="none" stroke="#04342C" strokeWidth={3} strokeLinecap="round" />;
+    }
+    // Default smile (happy, reminding)
+    return <Path d="M308,302 Q340,334 372,302" fill="none" stroke="#04342C" strokeWidth={4.5} strokeLinecap="round" />;
+  }
+
+  return (
+    <Svg width={w} height={h} viewBox="0 0 680 450" preserveAspectRatio="xMidYMid meet">
+      <Defs>
+        <LinearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%" stopColor="#7FE0BE" />
+          <Stop offset="55%" stopColor="#3FBE92" />
+          <Stop offset="100%" stopColor="#0F6E56" />
+        </LinearGradient>
+        <RadialGradient id="shineGrad" cx="35%" cy="30%" r="70%">
+          <Stop offset="0%" stopColor="#EFFFF9" stopOpacity={0.85} />
+          <Stop offset="100%" stopColor="#EFFFF9" stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+
+      {/* Shadow */}
+      <Ellipse cx={340} cy={385} rx={70} ry={12} fill="#0C447C" opacity={0.15} />
+
+      {/* Body */}
+      <Path
+        d="M340,90 C340,90 250,225 250,300 C250,353 290,392 340,392 C390,392 430,353 430,300 C430,225 340,90 340,90 Z"
+        fill="url(#bodyGrad)"
+        stroke="#0A4D3C"
+        strokeWidth={2.5}
+      />
+      <Path
+        d="M340,90 C340,90 250,225 250,300 C250,353 290,392 340,392 C390,392 430,353 430,300 C430,225 340,90 340,90 Z"
+        fill="url(#shineGrad)"
+      />
+      <Ellipse cx={295} cy={225} rx={14} ry={30} fill="#DFFFF3" opacity={0.4} />
+
+      {/* Eyebrows */}
+      <Path d="M292,248 Q305,236 318,247" fill="none" stroke="#073D30" strokeWidth={3.5} strokeLinecap="round" />
+      <Path d="M362,247 Q375,236 388,248" fill="none" stroke="#073D30" strokeWidth={3.5} strokeLinecap="round" />
+
+      {/* Eyes — handles blink, sleepy, wink, and open states */}
+      <Eyes />
+
+      {/* Blush */}
+      <Circle cx={288} cy={304} r={13} fill="#F0997B" opacity={0.5} />
+      <Circle cx={392} cy={304} r={13} fill="#F0997B" opacity={0.5} />
+
+      {/* Mouth — smile arc or open mouth for excited */}
+      <Mouth />
+    </Svg>
+  );
+}
+
 export default function Mascot({
   size = 120,
   expression = "happy",
@@ -55,24 +157,13 @@ export default function Mascot({
   message = null,
   style,
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const reduceMotion = useReducedMotion();
   const dropSide = size * 0.62;
-  const f = dropSide / 100;
   const bounceAnim = useRef(new Animated.Value(0)).current;
   const floatAnim = useRef(new Animated.Value(0)).current;
-  const blinkAnim = useRef(new Animated.Value(0)).current;
   const [isBlinking, setIsBlinking] = useState(false);
   const blinkTimerRef = useRef(null);
-  const waveAnim = useRef(new Animated.Value(0)).current;
-
-  const COLORS = {
-    drop: variant === "super" ? "#9B59B6" : colors.primary,
-    face: colors.text,
-    blush: isDark ? "rgba(255, 130, 130, 0.15)" : "rgba(255, 130, 130, 0.3)",
-    highlight: isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.35)",
-    lensBorder: colors.textSecondary,
-  };
 
   useEffect(() => {
     if (!celebration) {
@@ -115,33 +206,16 @@ export default function Mascot({
       const delay = 4000 + Math.random() * 2000;
       return setTimeout(() => {
         setIsBlinking(true);
-        Animated.sequence([
-          Animated.timing(blinkAnim, { toValue: 1, duration: 60, useNativeDriver: true }),
-          Animated.timing(blinkAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
-        ]).start(() => {
+        setTimeout(() => {
           setIsBlinking(false);
           blinkTimerRef.current = scheduleBlink();
-        });
+        }, 120);
       }, delay);
     };
     blinkTimerRef.current = scheduleBlink();
     return () => {
       if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
     };
-  }, [reduceMotion]);
-
-  // ── Arm wave (gentle back-and-forth) ──
-  // Skipped when reduced motion is enabled
-  useEffect(() => {
-    if (reduceMotion) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(waveAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        Animated.timing(waveAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
   }, [reduceMotion]);
 
   const bounce = bounceAnim.interpolate({
@@ -152,11 +226,6 @@ export default function Mascot({
   const floatOffset = floatAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -6],
-  });
-
-  const waveRotation = waveAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["-8deg", "8deg"],
   });
 
   // Combine float (idle) and bounce (celebration) — celebration overrides
@@ -182,84 +251,7 @@ export default function Mascot({
         </View>
       )}
 
-      <View
-        style={[
-          styles.drop,
-          {
-            width: dropSide,
-            height: dropSide,
-            backgroundColor: COLORS.drop,
-            borderTopLeftRadius: dropSide * 0.05,
-            borderTopRightRadius: dropSide * 0.5,
-            borderBottomLeftRadius: dropSide * 0.5,
-            borderBottomRightRadius: dropSide * 0.5,
-            shadowColor: COLORS.drop,
-          },
-        ]}
-      >
-        <View style={styles.face}>
-          <View
-            style={[
-              styles.shimmer,
-              {
-                width: 14 * f,
-                height: 8 * f,
-                borderRadius: 4 * f,
-                top: -14 * f,
-                left: -8 * f,
-              },
-            ]}
-          />
-
-          <View style={styles.eyesRow}>
-            <Eye type={eyeType(expression, "left")} size={5.5 * f} faceColor={COLORS.face} blinking={isBlinking} />
-            <View style={{ width: 10 * f }} />
-            <Eye type={eyeType(expression, "right")} size={5.5 * f} faceColor={COLORS.face} blinking={isBlinking} />
-          </View>
-
-          <Mouth expression={expression} size={12 * f} faceColor={COLORS.face} />
-
-          <View style={styles.blushRow}>
-            <View style={[styles.blush, { width: 7 * f, height: 4 * f, borderRadius: 3.5 * f }]} />
-            <View style={[styles.blush, { width: 7 * f, height: 4 * f, borderRadius: 3.5 * f }]} />
-          </View>
-        </View>
-      </View>
-
-      {/* ── Limbs ── */}
-      <View style={[styles.armLeft, {
-        width: dropSide * 0.2,
-        height: dropSide * 0.09,
-        borderRadius: dropSide * 0.045,
-        backgroundColor: COLORS.drop,
-        top: size * 0.37,
-        left: -(dropSide * 0.08),
-      }]} />
-      <Animated.View style={[styles.armRight, {
-        width: dropSide * 0.2,
-        height: dropSide * 0.09,
-        borderRadius: dropSide * 0.045,
-        backgroundColor: COLORS.drop,
-        top: size * 0.37,
-        right: -(dropSide * 0.08),
-        transform: [{ rotate: waveRotation }],
-      }]} />
-      {variant !== "super" && (
-        <View style={[styles.legs, { top: size * 0.86 }]}>
-          <View style={[styles.leg, {
-            width: dropSide * 0.1,
-            height: dropSide * 0.14,
-            borderRadius: dropSide * 0.05,
-            backgroundColor: COLORS.drop,
-          }]} />
-          <View style={[styles.leg, {
-            width: dropSide * 0.1,
-            height: dropSide * 0.14,
-            borderRadius: dropSide * 0.05,
-            backgroundColor: COLORS.drop,
-          }]} />
-        </View>
-      )}
+      <SvgBody size={size} expression={expression} isBlinking={isBlinking} variant={variant} />
 
       <Accessory variant={variant} size={dropSide} />
     </Animated.View>
@@ -311,81 +303,8 @@ function Accessory({ variant, size }) {
   return null;
 }
 
-function Eye({ type, size, faceColor, blinking }) {
-  if (blinking) {
-    return <View style={{ width: size * 1.1, height: 1.5, borderRadius: 1, backgroundColor: faceColor }} />;
-  }
-  const half = size / 2;
-  if (type === "circle") {
-    return <View style={{ width: size, height: size, borderRadius: half, backgroundColor: faceColor }} />;
-  }
-  if (type === "big") {
-    return <View style={{ width: size * 1.3, height: size * 1.3, borderRadius: (size * 1.3) / 2, backgroundColor: faceColor }} />;
-  }
-  return <View style={{ width: size * 1.5, height: 2.2, borderRadius: 1.5, backgroundColor: faceColor }} />;
-}
-
-function Mouth({ expression, size, faceColor }) {
-  const w = size * 0.7;
-  if (expression === "happy" || expression === "reminding") {
-    return (
-      <View style={{ marginTop: 4, width: w, height: w * 0.35, borderBottomLeftRadius: w * 0.4, borderBottomRightRadius: w * 0.4, borderBottomWidth: 2.5, borderBottomColor: faceColor }} />
-    );
-  }
-  if (expression === "happier") {
-    // Wider smile than "happy" to show increased happiness
-    return (
-      <View style={{ marginTop: 4, width: w * 1.2, height: w * 0.45, borderBottomLeftRadius: w * 0.5, borderBottomRightRadius: w * 0.5, borderBottomWidth: 3, borderBottomColor: faceColor }} />
-    );
-  }
-  if (expression === "excited") {
-    return (
-      <View style={{ marginTop: 4, width: w * 0.5, height: w * 0.5, borderRadius: w * 0.25, backgroundColor: faceColor }} />
-    );
-  }
-  return (
-    <View style={{ marginTop: 4, width: w * 0.5, height: w * 0.2, borderBottomLeftRadius: w * 0.1, borderBottomRightRadius: w * 0.1, borderBottomWidth: 2, borderBottomColor: faceColor }} />
-  );
-}
-
-function eyeType(expression, side) {
-  const MAP = {
-    happy: { left: "circle", right: "circle" },
-    happier: { left: "big", right: "big" },
-    excited: { left: "big", right: "big" },
-    reminding: { left: "line", right: "circle" },
-    sleepy: { left: "line", right: "line" },
-  };
-  return (MAP[expression] || MAP.happy)[side];
-}
-
 const styles = StyleSheet.create({
   wrapper: { alignItems: "center", justifyContent: "center" },
-  drop: {
-    alignItems: "center",
-    justifyContent: "center",
-    transform: [{ rotate: "45deg" }],
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  face: {
-    transform: [{ rotate: "-45deg" }],
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: "12%",
-  },
-  shimmer: { position: "absolute", backgroundColor: "rgba(255, 255, 255, 0.35)" },
-  eyesRow: { flexDirection: "row", alignItems: "center", marginTop: "-8%" },
-  blushRow: {
-    position: "absolute",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "130%",
-    top: "55%",
-  },
-  blush: { backgroundColor: "rgba(255, 130, 130, 0.3)" },
   accessory: { position: "absolute", zIndex: 5 },
   lens: { borderWidth: 1 },
   bubbleOuter: { position: "absolute", left: 0, right: 0, alignItems: "center", zIndex: 10 },
@@ -407,17 +326,4 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent", borderRightColor: "transparent",
     marginTop: -1,
   },
-  armLeft: { position: "absolute", zIndex: 3 },
-  armRight: { position: "absolute", zIndex: 3 },
-  legs: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-    zIndex: 3,
-  },
-  leg: {},
 });

@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getCachedWeather, fetchWeather, getWeatherAdvisory, weatherCodeToEmoji } from "../utils/weather";
 import { useTheme } from "../context/ThemeContext";
 
-export default function WeatherBanner({ hasLocation, lat, lon }) {
+export default function WeatherBanner({ hasLocation, lat, lon, onDismiss }) {
   const { colors } = useTheme();
   const s = makeStyles(colors);
 
@@ -58,9 +58,16 @@ export default function WeatherBanner({ hasLocation, lat, lon }) {
 
   if (!advisory) {
     return (
-      <View style={s.infoBanner}>
-        <Ionicons name={weatherCodeToEmoji(weatherCode)} size={18} color={colors.primary} />
-        <Text style={s.infoText}>{Math.round(temp)}°C</Text>
+      <View style={s.infoBannerWrapper}>
+        <View style={s.infoBanner}>
+          <Ionicons name={weatherCodeToEmoji(weatherCode)} size={18} color={colors.primary} />
+          <Text style={s.infoText}>{Math.round(temp)}°C</Text>
+        </View>
+        {onDismiss && (
+          <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close" size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -80,6 +87,14 @@ export default function WeatherBanner({ hasLocation, lat, lon }) {
       <View style={s.advisoryContent}>
         <Ionicons name={advisory.icon} size={18} color="#fff" />
         <Text style={s.advisoryText}>{advisory.text}</Text>
+        {onDismiss && (
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation(); onDismiss(); }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="close" size={18} color="rgba(255,255,255,0.7)" />
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -87,6 +102,11 @@ export default function WeatherBanner({ hasLocation, lat, lon }) {
 
 function makeStyles(colors) {
   return StyleSheet.create({
+    infoBannerWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
     infoBanner: {
       flexDirection: "row",
       alignItems: "center",

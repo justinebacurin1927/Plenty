@@ -12,7 +12,7 @@ import { getStreakData } from "../utils/storage";
 
 const CELL_SIZE = 14;
 const CELL_GAP = 2;
-const WEEKS_TO_SHOW = 12;
+const WEEKS_TO_SHOW = 6;
 
 /**
  * Compute cell data for the last 12 weeks.

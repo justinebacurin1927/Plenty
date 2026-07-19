@@ -1,5 +1,9 @@
 # Deferred Work
 
+## Deferred from: code review of story 6.3-screen-transitions-toast (2026-07-19)
+
+- Reduced-motion 2s auto-dismiss may violate WCAG timing guidelines [components/AchievementPopup.js:49] — Users with cognitive disabilities may need more time than 2s to read achievement content. Pre-existing design decision in story spec; no adjustable-timing framework exists. Out of scope for this story.
+
 ## Deferred from: code review of story 3.3-count-up-numbers (2026-07-19)
 
 - Reduced-motion toggle animates from zero [utils/motion.js:92-106] — When `reduceMotion` transitions `true→false` at runtime, `countUp.value` is still `0` and the ensuing `withTiming` animates from 0 to the real value, causing a brief visual jump. Requires accessibility toggle while app is mounted. Same unhandled pattern as WaterFill.

@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Linking,
 } from "react-native";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,6 +46,8 @@ const THEME_OPTIONS = [
   { key: "light",  label: "Light",  icon: "sunny" },
   { key: "dark",   label: "Dark",   icon: "moon" },
 ];
+
+const PRIVACY_POLICY_URL = "https://justine7417.github.io/plenty/privacy-policy";
 
 export default function SettingsScreen() {
   const { colors, themeMode, setThemeMode } = useTheme();
@@ -103,6 +106,12 @@ export default function SettingsScreen() {
     } catch (e) {
       console.error("Failed to save settings:", e.message, e.stack);
     }
+  };
+
+  const handleOpenPrivacyPolicy = () => {
+    Linking.openURL(PRIVACY_POLICY_URL).catch((e) =>
+      console.error("Failed to open privacy policy URL:", e.message, e.stack)
+    );
   };
 
   const handleResetData = () => {
@@ -593,6 +602,17 @@ export default function SettingsScreen() {
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={s.row} onPress={handleOpenPrivacyPolicy}>
+          <View style={s.rowLeft}>
+            <Ionicons name="shield-checkmark-outline" size={22} color={colors.textSecondary} />
+            <View>
+              <Text style={s.rowLabel}>Privacy Policy</Text>
+              <Text style={s.rowHint}>How your data is handled</Text>
+            </View>
+          </View>
+          <Ionicons name="open-outline" size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
         <View style={s.footer}>

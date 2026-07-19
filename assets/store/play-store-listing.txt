@@ -1,0 +1,32 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Plenty — Play Store Listing Descriptions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT'S NEW (short description)  [80 chars]
+═══════════════════════════════
+Build a daily hydration habit with streaks, rewards + beautiful water animation.
+
+
+FULL DESCRIPTION  [784 chars]
+══════════════════
+Plenty turns hydration into a rewarding daily habit.
+
+Track every sip with one tap. A beautiful animated water container fills as you progress toward your personalized daily goal, calculated from your weight and activity level.
+
+Build streaks with consecutive-day logs. A 7-day heatmap shows your consistency at a glance. Use streak freezes to keep your streak alive on off days.
+
+Unlock rewards at milestones: Bronze (3 days), Silver (7), Gold (14), and Diamond (30). Earn achievement badges for streaks, milestones, and habit patterns.
+
+Weather-aware reminders adapt to your local conditions via Open-Meteo — hotter days mean more frequent nudges. Set quiet hours to sleep undisturbed.
+
+All data stays on your device. No accounts, no sign-ups, no cloud sync. Your habits are yours alone.
+
+
+ASSET CHECKLIST
+═══════════════
+□ feature-graphic.png  (1024×500)  ✓
+□ screenshot-1-home.png  (1080×1920) — Home screen
+□ screenshot-2-quick-log.png  (1080×1920) — Quick-log modal
+□ screenshot-3-achievements.png  (1080×1920) — Achievements + rewards
+□ screenshot-4-onboarding.png  (1080×1920) — Onboarding welcome
+□ screenshot-5-settings.png  (1080×1920) — Settings screen

@@ -5,7 +5,30 @@
  * from here via the ThemeContext rather than using raw hex values.
  */
 
+const radius = Object.freeze({
+  xs: 4,
+  sm: 6,
+  md: 8,
+  lg: 12,
+  xl: 16,
+  pill: 999,
+});
+
+const lightElevation = {
+  1: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  2: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 6 },
+  3: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 24, elevation: 12 },
+};
+
+const darkElevation = {
+  1: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 2 },
+  2: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 },
+  3: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 24, elevation: 12 },
+};
+
 const light = {
+  radius,
+  elevation: lightElevation,
   // ── Backgrounds ──
   bg: "#E8F4FD",
   surface: "#FFFFFF",
@@ -74,6 +97,9 @@ const light = {
 };
 
 const dark = {
+  radius,
+  elevation: darkElevation,
+
   // ── Backgrounds ──
   bg: "#0D1B2A",
   surface: "#1B2838",
@@ -141,4 +167,4 @@ const dark = {
   switchThumbOn: "#6BB5FF",
 };
 
-export { light, dark };
+export { light, dark, radius };
