@@ -1,0 +1,110 @@
+<svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+<title>An animated flickering fire streak icon</title>
+<defs>
+<linearGradient id="flameOuter" x1="0" y1="1" x2="0" y2="0">
+  <stop offset="0%" stop-color="#FF6A00"/>
+  <stop offset="45%" stop-color="#FF9A2E"/>
+  <stop offset="80%" stop-color="#FFC94D"/>
+  <stop offset="100%" stop-color="#FFE98A"/>
+</linearGradient>
+<linearGradient id="flameInner" x1="0" y1="1" x2="0" y2="0">
+  <stop offset="0%" stop-color="#FFB100"/>
+  <stop offset="50%" stop-color="#FFD447"/>
+  <stop offset="100%" stop-color="#FFF6C8"/>
+</linearGradient>
+<radialGradient id="flameCore" cx="50%" cy="70%" r="60%">
+  <stop offset="0%" stop-color="#FFF6D8"/>
+  <stop offset="60%" stop-color="#FFDE6B"/>
+  <stop offset="100%" stop-color="#FFB840" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<style>
+.flameSway {
+  animation: sway 1.8s ease-in-out infinite;
+  transform-origin: 150px 380px;
+}
+@keyframes sway {
+  0%, 100% { transform: scale(1, 1) rotate(0deg); }
+  25% { transform: scale(0.97, 1.03) rotate(-2deg); }
+  50% { transform: scale(1.03, 0.97) rotate(1deg); }
+  75% { transform: scale(0.98, 1.02) rotate(-1deg); }
+}
+.innerFlicker {
+  animation: flicker 1.3s ease-in-out infinite;
+  transform-origin: 150px 340px;
+}
+@keyframes flicker {
+  0%, 100% { transform: scale(1, 1) translateY(0px); opacity: 1; }
+  50% { transform: scale(0.92, 1.08) translateY(-6px); opacity: 0.92; }
+}
+.coreFlicker {
+  animation: coreFlicker 0.9s ease-in-out infinite;
+  transform-origin: 150px 330px;
+}
+@keyframes coreFlicker {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+.spark {
+  animation: sparkRise 2.4s ease-in infinite;
+}
+@keyframes sparkRise {
+  0%   { transform: translateY(0px); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translateY(-160px); opacity: 0; }
+}
+</style>
+
+<path class="flameSway" d="M150,380
+  C90,380 60,330 65,270
+  C68,230 90,200 85,160
+  C82,135 70,115 75,90
+  C100,110 115,135 118,160
+  C120,120 105,80 120,35
+  C135,65 145,90 148,120
+  C160,80 155,45 175,10
+  C185,55 180,95 195,125
+  C205,100 205,75 220,55
+  C230,90 222,120 232,155
+  C240,190 250,220 240,260
+  C255,240 262,215 260,185
+  C280,220 285,270 260,320
+  C235,365 195,380 150,380 Z"
+  fill="url(#flameOuter)"/>
+
+<path class="innerFlicker" d="M150,345
+  C110,345 92,310 96,270
+  C99,242 112,222 110,195
+  C108,178 100,164 104,148
+  C120,163 128,180 130,198
+  C132,170 122,142 132,112
+  C142,133 148,150 150,170
+  C158,145 155,120 168,95
+  C175,125 172,152 182,172
+  C190,155 190,138 200,124
+  C207,148 202,170 208,193
+  C214,216 220,236 213,262
+  C224,248 229,231 227,210
+  C240,232 244,264 226,296
+  C208,326 180,345 150,345 Z"
+  fill="url(#flameInner)"/>
+
+<path class="coreFlicker" d="M150,320
+  C128,320 116,298 120,272
+  C123,254 132,242 130,224
+  C142,236 148,250 148,264
+  C154,246 148,226 158,206
+  C166,222 168,238 170,252
+  C176,238 176,224 184,214
+  C190,230 186,246 192,262
+  C198,278 202,290 196,306
+  C206,296 210,284 208,270
+  C218,286 220,306 208,324
+  C196,340 176,320 150,320 Z"
+  fill="url(#flameCore)"/>
+
+<circle class="spark" cx="120" cy="200" r="3" fill="#FFD98A" style="animation-delay:0s"/>
+<circle class="spark" cx="170" cy="220" r="2.4" fill="#FFE9B0" style="animation-delay:0.8s"/>
+<circle class="spark" cx="195" cy="180" r="2.8" fill="#FFD98A" style="animation-delay:1.5s"/>
+<circle class="spark" cx="140" cy="150" r="2" fill="#FFE9B0" style="animation-delay:0.4s"/>
+</svg>

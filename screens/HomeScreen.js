@@ -35,6 +35,7 @@ import { useCountUp, useReducedMotion } from "../utils/motion";
 import { triggerHaptic, ImpactFeedbackStyle } from "../utils/haptics";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import StreakFlame from "../components/StreakFlame";
+import FireStreak from "../components/FireStreak";
 import WaterFill from "../components/WaterFill";
 import PressableScale from "../components/PressableScale";
 import Toast from "../components/Toast";
@@ -451,7 +452,7 @@ export default function HomeScreen({ navigation }) {
         {/* ── Header: bigger mascot + "Plenty" title + cloud bubble below title ── */}
         <View style={s.header}>
           <Mascot
-            size={140}
+            size={170}
             expression={mascotExpression}
             variant={mascotVariant}
             celebration={mascotCelebration}
@@ -466,6 +467,7 @@ export default function HomeScreen({ navigation }) {
               </Text>
             </View>
             {/* Bubble tail — points left toward the mascot */}
+            <View style={[s.cloudTailOutline, { borderRightColor: colors.primaryLight }]} />
             <View style={[s.cloudTail, { borderRightColor: colors.surface }]} />
           </View>
         </View>
@@ -493,14 +495,18 @@ export default function HomeScreen({ navigation }) {
                 await captureAndShare(streakCardRef, "My Plenty streak!");
               }}
             >
-              <Ionicons name="share-outline" size={16} color="#fff" />
+              <FireStreak size={20}>
+                <Ionicons name="share-outline" size={16} color="#fff" />
+              </FireStreak>
             </TouchableOpacity>
             <TouchableOpacity
               style={s.dismissBtn}
               onPress={() => setShowStreakBanner(false)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="close" size={18} color={colors.warning} />
+              <FireStreak size={24}>
+                <Ionicons name="close" size={18} color={colors.warning} />
+              </FireStreak>
             </TouchableOpacity>
           </View>
         )}
@@ -857,6 +863,18 @@ function makeStyles(colors) {
       borderTopWidth: 8,
       borderBottomWidth: 8,
       borderRightWidth: 12,
+      borderTopColor: "transparent",
+      borderBottomColor: "transparent",
+    },
+    cloudTailOutline: {
+      position: "absolute",
+      left: -12,
+      top: 58,
+      width: 0,
+      height: 0,
+      borderTopWidth: 9,
+      borderBottomWidth: 9,
+      borderRightWidth: 14,
       borderTopColor: "transparent",
       borderBottomColor: "transparent",
     },

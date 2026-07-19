@@ -6,6 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { getOnboarded } from "./utils/storage";
 import { useReducedMotion } from "./utils/motion";
+import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold } from "@expo-google-fonts/quicksand";
+import { Nunito_400Regular, Nunito_500Medium, Nunito_600SemiBold, Nunito_700Bold } from "@expo-google-fonts/nunito";
 
 // ═══ Logger — captures console.log/warn/error from boot ═══
 import "./utils/logger";
@@ -102,6 +104,16 @@ function AppNavigator() {
 
 export default function App() {
   const [onboarded, setOnboarded] = useState(null); // null = loading
+  const [fontsLoaded] = useFonts({
+    "Quicksand-Bold": Quicksand_700Bold,
+    "Quicksand-SemiBold": Quicksand_600SemiBold,
+    "Quicksand-Medium": Quicksand_500Medium,
+    "Quicksand-Regular": Quicksand_400Regular,
+    "Nunito-Bold": Nunito_700Bold,
+    "Nunito-SemiBold": Nunito_600SemiBold,
+    "Nunito-Medium": Nunito_500Medium,
+    "Nunito-Regular": Nunito_400Regular,
+  });
 
   useEffect(() => {
     getOnboarded().then(setOnboarded);
@@ -111,7 +123,7 @@ export default function App() {
     setOnboarded(true);
   };
 
-  if (onboarded === null) {
+  if (!fontsLoaded || onboarded === null) {
     // Loading state — keep splash visible
     return null;
   }

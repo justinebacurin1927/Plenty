@@ -285,13 +285,13 @@ export default function Mascot({
     return () => sequence.stop();
   }, [celebration, reduceMotion]);
 
-  // Idle float (gentle 6px bob, 2s cycle)
+  // Idle float (gentle 12px bob, 1.6s cycle)
   useEffect(() => {
     if (reduceMotion) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(floatAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        Animated.timing(floatAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
       ])
     );
     loop.start();
@@ -324,7 +324,7 @@ export default function Mascot({
 
   const floatOffset = floatAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -6],
+    outputRange: [0, -12],
   });
 
   const translateY = useMemo(
