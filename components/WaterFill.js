@@ -24,7 +24,6 @@ import Svg, { Path, Rect, ClipPath, Defs } from "react-native-svg";
 import Animated, {
   useSharedValue,
   useAnimatedProps,
-  withRepeat,
   withTiming,
   cancelAnimation,
   Easing,
@@ -32,10 +31,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { useTheme } from "../context/ThemeContext";
 import { buildWavePath, LAYER_CONFIG, RIPPLE_CONFIG } from "../utils/wave";
-import { useReducedMotion, DURATION } from "../utils/motion";
+import { useReducedMotion } from "../utils/motion";
 
 const AnimatedPath = createAnimatedComponent(Path);
-const AnimatedRect = createAnimatedComponent(Rect);
+
 
 const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height = 400, clipPathDef }, ref) {
   const { colors } = useTheme();
@@ -43,7 +42,8 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
 
   // Shared values for UI-thread animation
   const phase1 = useSharedValue(0);
-  const phase2 = useSharedValue(0);
+
+
   const animatedFill = useSharedValue(fill);
   const containerWidth = useSharedValue(width);
   const containerHeight = useSharedValue(height);
@@ -102,33 +102,9 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
     });
   }, [fill, reducedMotion]);
 
-  // Continuous wave animation (idle motion)
-  useEffect(() => {
-    if (reducedMotion) return;
-
-    phase1.value = withRepeat(
-      withTiming(2 * Math.PI, {
-        duration: DURATION.waveCycle,
-        easing: Easing.linear,
-      }),
-      -1,
-      false
-    );
-
-    phase2.value = withRepeat(
-      withTiming(2 * Math.PI, {
-        duration: Math.round(DURATION.waveCycle / 0.7),
-        easing: Easing.linear,
-      }),
-      -1,
-      false
-    );
-
-    return () => {
-      cancelAnimation(phase1);
-      cancelAnimation(phase2);
-    };
-  }, [reducedMotion]);
+  // No continuous wave animation — static surface only.
+  // The phase shared values stay at 0 so the wave is flat/stationary.
+  // Ripple and goal celebration effects still work below.
 
   // Cleanup ripple and shimmer animations on unmount
   useEffect(() => {
@@ -139,7 +115,13 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
     };
   }, []);
 
-  // Water body rect — fills below the wave surface
+  // Water body rect is intentionally unused in the JSX. The wave layers
+  // already fill from the wave surface to the container bottom via
+  // buildWavePath's closing edges (L bottom-R, L bottom-L, Z). A separate
+  // body rect creates a sharp horizontal-to-diagonal intersection at the
+  // glass clip boundary (the "spike" artifact), so we skip it.
+  // Hook kept for Reanimated hook-count consistency — not rendered.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const bodyProps = useAnimatedProps(() => {
     const safeFill = Math.max(0, Math.min(1, animatedFill.value));
     const bodyH = containerHeight.value * safeFill;
@@ -154,7 +136,6 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
 
   // Extract layer config values for worklet-safe access
   const { amplitude: amp1, frequency: freq1 } = LAYER_CONFIG[0];
-  const { amplitude: amp2, frequency: freq2 } = LAYER_CONFIG[1];
 
   // Worklet-compatible gaussian function for the ripple
   const gaussian = useCallback((x, center, amp, sig) => {
@@ -180,23 +161,6 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
     return { d };
   });
 
-  // Wave layer 2 (back) — slower, wider, with scaled ripple
-  const waveProps2 = useAnimatedProps(() => {
-    const ra = rippleAmplitude.value;
-    const rc = (phase2.value % (2 * Math.PI)) / (2 * Math.PI) * containerWidth.value;
-
-    const d = buildWavePath(
-      containerWidth.value,
-      containerHeight.value,
-      animatedFill.value,
-      amp2,
-      freq2,
-      phase2.value + Math.PI / 2,
-      (x) => gaussian(x, rc, ra * 0.7, RIPPLE_CONFIG.sigma * 1.2)
-    );
-    return { d };
-  });
-
   // Shimmer overlay — sweeps left-to-right on goal hit
   const shimmerProps = useAnimatedProps(() => ({
     x: shimmerPosition.value,
@@ -214,27 +178,16 @@ const WaterFill = forwardRef(function WaterFill({ fill = 0, width = 300, height 
         </ClipPath>
       </Defs>
 
-      {/* Water body — solid fill below the wave */}
-      <AnimatedRect animatedProps={bodyProps} fill={colors.primary} />
 
-      {/* Layer 2 (back) — wider amplitude, more transparent */}
-      <AnimatedPath
-        animatedProps={waveProps2}
-        fill={colors.primaryLight}
-        opacity={LAYER_CONFIG[1].opacity}
-        clipPath="url(#water-clip)"
-      />
-
-      {/* Layer 1 (front) — tighter, more opaque, the visible surface */}
+      {/* Single wave layer — fully opaque. Amplitude=0 so flat, no spikes. */}
       <AnimatedPath
         animatedProps={waveProps1}
         fill={colors.primary}
-        opacity={LAYER_CONFIG[0].opacity}
+        opacity={1}
         clipPath="url(#water-clip)"
       />
 
-      {/* Shimmer overlay — white highlight sweeps across on goal hit */}
-      <AnimatedRect animatedProps={shimmerProps} fill="#ffffff" clipPath="url(#water-clip)" />
+	      {/* Shimmer overlay -- intentionally not rendered. White AnimatedRect creates vertical spike artifacts at the glass clip-path boundary. Hooks kept for Reanimated hook-count stability. */}
     </Svg>
   );
 });

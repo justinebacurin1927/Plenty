@@ -100,6 +100,7 @@ export default function HomeScreen({ navigation }) {
   const [popupAchievements, setPopupAchievements] = useState([]);
   const [escalationTier, setEscalationTier] = useState("normal");
   const [mascotCelebration, setMascotCelebration] = useState(false);
+  const [mascotTalking, setMascotTalking] = useState(false);
   const [mascotVariant, setMascotVariant] = useState("classic");
   const [hasWeatherLocation, setHasWeatherLocation] = useState(false);
   const [weatherLat, setWeatherLat] = useState(null);
@@ -115,7 +116,7 @@ export default function HomeScreen({ navigation }) {
   const lastLogRef = React.useRef(0);
   const waterFillRef = useRef(null);
   const reducedMotion = useReducedMotion();
-  const goalHitRef = useRef(false);
+  const goalCyclesRef = useRef(0); // tracks completed goal cycles for wrap-around celebration
   const mountGuard = useRef(true);
   const [waterWidth, setWaterWidth] = useState(Dimensions.get("window").width - 48);
 
@@ -351,16 +352,21 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   const cycleExpression = useCallback(() => {
-    setMascotExpression((prev) => {
-      const idx = EXPRESSIONS.indexOf(prev);
-      return EXPRESSIONS[(idx + 1) % EXPRESSIONS.length];
-    });
-    setMascotMessage(getRandomMessage());
-  }, []);
+    if (mascotTalking) return;
+    setMascotTalking(true);
+    setTimeout(() => {
+      setMascotTalking(false);
+      setMascotExpression((prev) => {
+        const idx = EXPRESSIONS.indexOf(prev);
+        return EXPRESSIONS[(idx + 1) % EXPRESSIONS.length];
+      });
+      setMascotMessage(getRandomMessage());
+    }, 1800);
+  }, [mascotTalking]);
 
   const goalMl = React.useMemo(() => dailyGoal * 250, [dailyGoal]);
   const progressPct = React.useMemo(
-    () => Math.min(todayMl / goalMl, 1),
+    () => (todayMl % (goalMl || 1)) / (goalMl || 1),
     [todayMl, goalMl]
   );
   const glassesFromMl = React.useMemo(
@@ -370,14 +376,33 @@ export default function HomeScreen({ navigation }) {
 
   const { displayText } = useCountUp(todayMl);
 
-  // Glass-shaped clip path for WaterFill — wider at top, narrower at bottom
+  // Glass-shaped clip path for WaterFill — drinking glass silhouette
+  // Uses cubic bezier sides for gentle taper + rounded corners on all vertices
   const W = waterWidth;
   const H = 200;
-  const glassClipPath = useMemo(() => (
-    <Path
-      d={`M${W * 0.08},0 L${W * 0.22},${H - 14} L${W * 0.2},${H} L${W * 0.8},${H} L${W * 0.78},${H - 14} L${W * 0.92},0 Z`}
-    />
-  ), [W, H]);
+  const glassClipPath = useMemo(() => {
+    const topM = W * 0.16;    // narrower at the top (16% margin each side = 68% width)
+    const botM = W * 0.26;    // narrower at the bottom (26% margin each side = 48% width)
+    const r = 5;              // corner rounding radius
+    const midY = H * 0.5;     // where the side taper midpoint is
+
+    return (
+      <Path
+        d={[
+          `M ${topM + r}, 0`,
+          `L ${W - topM - r}, 0`,
+          `Q ${W - topM}, 0, ${W - topM}, ${r}`,
+          `C ${W - topM}, ${midY}, ${W - botM}, ${H * 0.7}, ${W - botM}, ${H - r}`,
+          `Q ${W - botM}, ${H}, ${W - botM - r}, ${H}`,
+          `L ${botM + r}, ${H}`,
+          `Q ${botM}, ${H}, ${botM}, ${H - r}`,
+          `C ${botM}, ${H * 0.7}, ${topM}, ${midY}, ${topM}, ${r}`,
+          `Q ${topM}, 0, ${topM + r}, 0`,
+          `Z`,
+        ].join(' ')}
+      />
+    );
+  }, [W, H]);
 
   // ── Goal celebration gate ──
   const goalReachedScale = useSharedValue(0);
@@ -389,18 +414,20 @@ export default function HomeScreen({ navigation }) {
   }));
 
   useEffect(() => {
+    const cycles = goalMl > 0 ? Math.floor(todayMl / goalMl) : 0;
+
     if (mountGuard.current) {
       mountGuard.current = false;
-      if (progressPct >= 1) {
-        goalHitRef.current = true;
+      if (cycles > 0) {
+        goalCyclesRef.current = cycles;
         goalReachedScale.value = 1;
         goalReachedOpacity.value = 1;
       }
       return;
     }
 
-    if (progressPct >= 1 && !goalHitRef.current) {
-      goalHitRef.current = true;
+    if (cycles > goalCyclesRef.current) {
+      goalCyclesRef.current = cycles;
       waterFillRef.current?.triggerGoalCelebration();
 
       if (!reducedMotion) {
@@ -416,15 +443,7 @@ export default function HomeScreen({ navigation }) {
         goalReachedOpacity.value = 1;
       }
     }
-  }, [progressPct, reducedMotion]);
-
-  useEffect(() => {
-    if (todayMl === 0) {
-      goalHitRef.current = false;
-      goalReachedScale.value = 0;
-      goalReachedOpacity.value = 0;
-    }
-  }, [todayMl]);
+  }, [todayMl, goalMl, reducedMotion]);
 
   return (
     <SafeAreaView style={s.container}>
@@ -436,6 +455,7 @@ export default function HomeScreen({ navigation }) {
             expression={mascotExpression}
             variant={mascotVariant}
             celebration={mascotCelebration}
+            talking={mascotTalking}
             onPress={cycleExpression}
           />
           <View style={s.headerRight}>
@@ -445,8 +465,8 @@ export default function HomeScreen({ navigation }) {
                 {mascotMessage}
               </Text>
             </View>
-            {/* Bubble tail — points up/left toward the mascot */}
-            <View style={[s.cloudTail, { borderBottomColor: colors.surface }]} />
+            {/* Bubble tail — points left toward the mascot */}
+            <View style={[s.cloudTail, { borderRightColor: colors.surface }]} />
           </View>
         </View>
 
@@ -536,7 +556,7 @@ export default function HomeScreen({ navigation }) {
             <View style={s.waterContainer} onLayout={handleWaterLayout}>
               <WaterFill ref={waterFillRef} fill={progressPct} width={waterWidth} height={200} clipPathDef={glassClipPath} />
             </View>
-            {/* Glass outline overlay */}
+            {/* Glass outline overlay — same smooth tapered path as the clip path */}
             <Svg
               width={waterWidth}
               height={200}
@@ -545,12 +565,27 @@ export default function HomeScreen({ navigation }) {
               pointerEvents="none"
             >
               <Path
-                d={`M${W * 0.08},0 L${W * 0.22},${200 - 14} L${W * 0.2},${200} L${W * 0.8},${200} L${W * 0.78},${200 - 14} L${W * 0.92},0 Z`}
+                d={(() => {
+                  const t = W * 0.16, b = W * 0.26, r = 5, m = H * 0.5;
+                  return [
+                    `M ${t + r}, 0`,
+                    `L ${W - t - r}, 0`,
+                    `Q ${W - t}, 0, ${W - t}, ${r}`,
+                    `C ${W - t}, ${m}, ${W - b}, ${H * 0.7}, ${W - b}, ${H - r}`,
+                    `Q ${W - b}, ${H}, ${W - b - r}, ${H}`,
+                    `L ${b + r}, ${H}`,
+                    `Q ${b}, ${H}, ${b}, ${H - r}`,
+                    `C ${b}, ${H * 0.7}, ${t}, ${m}, ${t}, ${r}`,
+                    `Q ${t}, 0, ${t + r}, 0`,
+                    `Z`,
+                  ].join(' ');
+                })()}
                 fill="none"
-                stroke={colors.border}
-                strokeWidth={2.5}
+                stroke={colors.text}
+                strokeWidth={3.5}
+                strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity={0.6}
+                opacity={0.5}
               />
             </Svg>
           </View>
@@ -771,11 +806,12 @@ function makeStyles(colors) {
     container: {
       flex: 1,
       backgroundColor: colors.bg,
+      position: "relative",
     },
     scroll: {
       alignItems: "center",
       paddingHorizontal: space("xl"),
-      paddingTop: 80,
+      paddingTop: 40,
       paddingBottom: space("3xl"),
     },
     header: {
@@ -799,11 +835,13 @@ function makeStyles(colors) {
       paddingVertical: 8,
       marginTop: 6,
       maxWidth: 180,
+      borderWidth: 1.5,
+      borderColor: colors.primaryLight,
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
-      elevation: 4,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 5,
     },
     cloudBubbleText: {
       fontSize: 13,
@@ -812,15 +850,15 @@ function makeStyles(colors) {
     },
     cloudTail: {
       position: "absolute",
-      top: 36,
       left: -10,
+      top: 59,
       width: 0,
       height: 0,
-      borderLeftWidth: 8,
-      borderRightWidth: 8,
-      borderBottomWidth: 10,
-      borderLeftColor: "transparent",
-      borderRightColor: "transparent",
+      borderTopWidth: 8,
+      borderBottomWidth: 8,
+      borderRightWidth: 12,
+      borderTopColor: "transparent",
+      borderBottomColor: "transparent",
     },
     streakBadge: {
       marginTop: space("lg"),

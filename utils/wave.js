@@ -44,7 +44,7 @@ export function sineY(x, amplitude, frequency, phase, baseline) {
 export function buildWavePath(width, height, fillRatio, amplitude, frequency, phase, rippleFn = () => 0) {
   "worklet";
   const safeWidth = Math.max(width, 1); // prevent degenerate paths from zero-width input
-  const baseline = height * (1 - Math.max(0, Math.min(1, fillRatio)));
+  const baseline = height * (1 - Math.max(0, fillRatio));
   const segments = Math.max(Math.round(safeWidth / 4), 8); // one control point every ~4px
 
   // Build the wave surface curve using quadratic beziers that pass through
@@ -76,8 +76,8 @@ export function buildWavePath(width, height, fillRatio, amplitude, frequency, ph
  * Layer 1 (back):  slower, wider, more transparent — creates depth illusion
  */
 export const LAYER_CONFIG = [
-  { amplitude: 8, frequency: 1, speed: 1, opacity: 0.85 },
-  { amplitude: 12, frequency: 0.6, speed: 0.7, opacity: 0.4 },
+  { amplitude: 0, frequency: 1, speed: 1, opacity: 0.85 },
+  { amplitude: 0, frequency: 0.6, speed: 0.7, opacity: 0.4 },
 ];
 
 /**
@@ -93,7 +93,7 @@ export const LAYER_CONFIG = [
  * @property {number} duration       — decay time from spike to 0 (ms)
  */
 export const RIPPLE_CONFIG = {
-  spikeAmplitude: 20,
+  spikeAmplitude: 0,
   sigma: 60,
   duration: 600,
 };

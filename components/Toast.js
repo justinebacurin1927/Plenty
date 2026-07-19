@@ -73,7 +73,7 @@ export default function Toast({ message, visible, onDismiss }) {
         {
           opacity: reduceMotion ? 1 : opacity,
           transform: reduceMotion ? [] : [{ translateY }],
-          bottom: Math.max(insets.bottom, 12) + 80,
+          bottom: Math.max(insets.bottom, 12) + 8,
         },
       ]}
     >

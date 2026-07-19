@@ -168,10 +168,12 @@ export default function AchievementPopup({ achievements, visible, onDismiss }) {
             ))}
           </View>
 
-          <Ionicons name="trophy" size={48} color={colors.warning} />
-          <Text style={s.emoji}>{achievement.emoji}</Text>
-          <Text style={s.title}>{achievement.title}</Text>
-          <Text style={s.description}>{achievement.description}</Text>
+          <View style={s.contentCenter}>
+            <Ionicons name="trophy" size={48} color={colors.warning} />
+            <Text style={s.emoji}>{achievement.emoji}</Text>
+            <Text style={s.title}>{achievement.title}</Text>
+            <Text style={s.description}>{achievement.description}</Text>
+          </View>
 
           <TouchableOpacity style={s.button} onPress={handleDismiss}>
             <Text style={s.buttonText}>
@@ -195,15 +197,24 @@ function makeStyles(colors) {
     card: {
       backgroundColor: colors.surface,
       borderRadius: 28,
-      paddingVertical: 36,
+      paddingTop: 28,
+      paddingBottom: 20,
       paddingHorizontal: 32,
       alignItems: "center",
-      width: SCREEN_WIDTH * 0.8,
+      height: 440,
+      width: SCREEN_WIDTH * 0.85,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.25,
       shadowRadius: 24,
       elevation: 12,
+    },
+    contentCenter: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingTop: 30,
+      paddingBottom: 10,
     },
     confettiLayer: {
       position: "absolute",

@@ -1,3 +1,9 @@
+/**
+ * Mascot — Animated water droplet character using the v2 brand design.
+ *
+ * Renders a glossy blue droplet SVG with expression-driven eyes/mouth.
+ * Supports talking animation and various expression states.
+ */
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -47,21 +53,71 @@ export function streakToExpression(streak) {
   return "happy";
 }
 
+// Mouth Y-scale values for the talking animation cycle
+const TALK_SCALES = [0.15, 0.75, 0.3, 0.9, 0.4, 0.7, 0.25, 0.45];
+
 /**
- * SVG-based mascot body — glossy teardrop with no limbs, matching
- * the floating_droplet_slime.svg design from the brand kit.
+ * SVG body — blue droplet matching the v2 brand kit.
+ * Renders eyes and mouth based on expression/talking props.
  */
-function SvgBody({ size, expression, isBlinking, variant }) {
+function SvgBody({ size, expression, isBlinking, variant, talking, isDark }) {
   const w = size;
   const h = size * 1.05;
+
+  // Dark mode color values from droplet-darkmode.svg
+  const C = {
+    bodyGrad: isDark
+      ? ["#6FB3EE", "#2E7FD1", "#123B70"]
+      : ["#8FC7F2", "#4A9EE8", "#1E6FBF"],
+    shineColor: isDark ? "#EAF6FF" : "#FFFFFF",
+    shineMaxOpacity: isDark ? 0.85 : 0.9,
+    stroke: isDark ? "#5CC9FF" : "#155A9E",
+    eye: isDark ? "#04122A" : "#0A2E4F",
+    eyeHighlight: isDark ? "#EAF6FF" : "#FFFFFF",
+    blush: isDark ? "#7FB8E8" : "#F5A9A0",
+    blushOpacity: 0.45,
+    shadow: isDark ? "#000000" : "#0C3B6B",
+    shadowOpacity: isDark ? 0.35 : 0.18,
+    highlight: "#EAF6FF",
+    highlightOpacity: isDark ? 0.4 : 0.45,
+    glow: isDark ? "#5CC9FF" : "transparent",
+    moon: "#F4F1E4",
+    star: "#EAF6FF",
+  };
+
+  // Talking mouth animation — cycles mouth height via setInterval
+  const [talkScale, setTalkScale] = useState(0.15);
+  const talkIntervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!talking) {
+      setTalkScale(0.15);
+      if (talkIntervalRef.current) {
+        clearInterval(talkIntervalRef.current);
+        talkIntervalRef.current = null;
+      }
+      return;
+    }
+    let i = 0;
+    talkIntervalRef.current = setInterval(() => {
+      i = (i + 1) % TALK_SCALES.length;
+      setTalkScale(TALK_SCALES[i]);
+    }, 120);
+    return () => {
+      if (talkIntervalRef.current) {
+        clearInterval(talkIntervalRef.current);
+        talkIntervalRef.current = null;
+      }
+    };
+  }, [talking]);
 
   function Eyes() {
     if (isBlinking || expression === "sleepy") {
       // Closed eyes — curved arcs
       return (
         <>
-          <Path d="M292,272 Q306,260 320,272" fill="none" stroke="#04342C" strokeWidth={4} strokeLinecap="round" />
-          <Path d="M360,272 Q374,260 388,272" fill="none" stroke="#04342C" strokeWidth={4} strokeLinecap="round" />
+          <Path d="M292,272 Q306,260 320,272" fill="none" stroke={C.eye} strokeWidth={4} strokeLinecap="round" />
+          <Path d="M360,272 Q374,260 388,272" fill="none" stroke={C.eye} strokeWidth={4} strokeLinecap="round" />
         </>
       );
     }
@@ -69,80 +125,123 @@ function SvgBody({ size, expression, isBlinking, variant }) {
       // Wink — left closed, right open
       return (
         <>
-          <Path d="M292,272 Q306,260 320,272" fill="none" stroke="#04342C" strokeWidth={4} strokeLinecap="round" />
-          <Ellipse cx={374} cy={270} rx={9} ry={13} fill="#04342C" />
-          <Circle cx={377} cy={265} r={2.5} fill="#EFFFF9" />
+          <Path d="M292,272 Q306,260 320,272" fill="none" stroke={C.eye} strokeWidth={4} strokeLinecap="round" />
+          <Ellipse cx={374} cy={270} rx={9} ry={13} fill={C.eye} />
+          <Circle cx={377} cy={265} r={2.5} fill={C.eyeHighlight} />
         </>
       );
     }
-    // Open eyes — big for "happier"/"excited", normal otherwise
-    const big = expression === "happier" || expression === "excited";
+    if (expression === "happy" || expression === "happier") {
+      // Squinted happy arcs ^ ^  (from droplet(v2-happy).svg)
+      return (
+        <>
+          <Path d="M296,262 Q306,252 316,262" fill="none" stroke={C.eye} strokeWidth={4} strokeLinecap="round" />
+          <Path d="M364,262 Q374,252 384,262" fill="none" stroke={C.eye} strokeWidth={4} strokeLinecap="round" />
+        </>
+      );
+    }
+    // Open round eyes (idle, excited, talking)
+    const big = expression === "excited";
     return (
       <>
-        <Ellipse cx={306} cy={270} rx={big ? 11 : 9} ry={big ? 16 : 13} fill="#04342C" />
-        <Ellipse cx={374} cy={270} rx={big ? 11 : 9} ry={big ? 16 : 13} fill="#04342C" />
-        <Circle cx={big ? 310 : 309} cy={big ? 264 : 265} r={big ? 3 : 2.5} fill="#EFFFF9" />
-        <Circle cx={big ? 378 : 377} cy={big ? 264 : 265} r={big ? 3 : 2.5} fill="#EFFFF9" />
+        <Ellipse cx={306} cy={270} rx={big ? 11 : 9} ry={big ? 16 : 13} fill={C.eye} />
+        <Ellipse cx={374} cy={270} rx={big ? 11 : 9} ry={big ? 16 : 13} fill={C.eye} />
+        <Circle cx={big ? 310 : 309} cy={big ? 264 : 265} r={big ? 3 : 2.5} fill={C.eyeHighlight} />
+        <Circle cx={big ? 378 : 377} cy={big ? 264 : 265} r={big ? 3 : 2.5} fill={C.eyeHighlight} />
       </>
     );
   }
 
   function Mouth() {
+    if (talking) {
+      // Animated talking mouth — ellipse that changes height
+      return <Ellipse cx={340} cy={312} rx={16} ry={10 * talkScale} fill={C.eye} />;
+    }
     if (expression === "excited") {
-      return <Ellipse cx={340} cy={312} rx={16} ry={10} fill="#04342C" />;
+      return <Ellipse cx={340} cy={312} rx={16} ry={10} fill={C.eye} />;
     }
     if (expression === "happier") {
-      return <Path d="M300,302 Q340,342 380,302" fill="none" stroke="#04342C" strokeWidth={4.5} strokeLinecap="round" />;
+      return <Path d="M300,302 Q340,342 380,302" fill="none" stroke={C.eye} strokeWidth={4.5} strokeLinecap="round" />;
     }
     if (expression === "sleepy") {
-      return <Path d="M315,305 Q340,318 365,305" fill="none" stroke="#04342C" strokeWidth={3} strokeLinecap="round" />;
+      return <Path d="M315,305 Q340,318 365,305" fill="none" stroke={C.eye} strokeWidth={3} strokeLinecap="round" />;
     }
     // Default smile (happy, reminding)
-    return <Path d="M308,302 Q340,334 372,302" fill="none" stroke="#04342C" strokeWidth={4.5} strokeLinecap="round" />;
+    return <Path d="M308,302 Q340,332 372,302" fill="none" stroke={C.eye} strokeWidth={4.5} strokeLinecap="round" />;
   }
 
   return (
     <Svg width={w} height={h} viewBox="0 0 680 450" preserveAspectRatio="xMidYMid meet">
       <Defs>
         <LinearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor="#7FE0BE" />
-          <Stop offset="55%" stopColor="#3FBE92" />
-          <Stop offset="100%" stopColor="#0F6E56" />
+          <Stop offset="0%" stopColor={C.bodyGrad[0]} />
+          <Stop offset="55%" stopColor={C.bodyGrad[1]} />
+          <Stop offset="100%" stopColor={C.bodyGrad[2]} />
         </LinearGradient>
         <RadialGradient id="shineGrad" cx="35%" cy="30%" r="70%">
-          <Stop offset="0%" stopColor="#EFFFF9" stopOpacity={0.85} />
-          <Stop offset="100%" stopColor="#EFFFF9" stopOpacity={0} />
+          <Stop offset="0%" stopColor={C.shineColor} stopOpacity={C.shineMaxOpacity} />
+          <Stop offset="100%" stopColor={C.shineColor} stopOpacity={0} />
         </RadialGradient>
+        {isDark && (
+          <RadialGradient id="glow" cx="50%" cy="55%" r="60%">
+            <Stop offset="0%" stopColor={C.glow} stopOpacity={0.55} />
+            <Stop offset="60%" stopColor={C.glow} stopOpacity={0.15} />
+            <Stop offset="100%" stopColor={C.glow} stopOpacity={0} />
+          </RadialGradient>
+        )}
       </Defs>
 
       {/* Shadow */}
-      <Ellipse cx={340} cy={385} rx={70} ry={12} fill="#0C447C" opacity={0.15} />
+      {isDark ? (
+        <Ellipse cx={340} cy={395} rx={70} ry={12} fill={C.shadow} opacity={C.shadowOpacity} />
+      ) : (
+        <Ellipse cx={340} cy={395} rx={70} ry={12} fill={C.shadow} opacity={C.shadowOpacity} />
+      )}
 
-      {/* Body */}
+      {/* Dark mode: crescent moon */}
+      {isDark && (
+        <Path d="M520,80 a28,28 0 1 0 0,56 a21,21 0 1 1 0,-56 Z" fill={C.moon} />
+      )}
+
+      {/* Dark mode: stars */}
+      {isDark && (
+        <>
+          <Circle cx={480} cy={200} r={2.5} fill={C.star} />
+          <Circle cx={210} cy={190} r={2} fill={C.star} />
+          <Circle cx={460} cy={320} r={2.2} fill={C.star} />
+        </>
+      )}
+
+      {/* Dark mode: glow ring behind droplet */}
+      {isDark && (
+        <Circle cx={340} cy={260} r={140} fill="url(#glow)" />
+      )}
+
+      {/* Body droplet */}
       <Path
         d="M340,90 C340,90 250,225 250,300 C250,353 290,392 340,392 C390,392 430,353 430,300 C430,225 340,90 340,90 Z"
         fill="url(#bodyGrad)"
-        stroke="#0A4D3C"
-        strokeWidth={2.5}
+        stroke={C.stroke}
+        strokeWidth={isDark ? 2 : 2.5}
       />
       <Path
         d="M340,90 C340,90 250,225 250,300 C250,353 290,392 340,392 C390,392 430,353 430,300 C430,225 340,90 340,90 Z"
         fill="url(#shineGrad)"
       />
-      <Ellipse cx={295} cy={225} rx={14} ry={30} fill="#DFFFF3" opacity={0.4} />
+      <Ellipse cx={295} cy={225} rx={14} ry={30} fill={C.highlight} opacity={C.highlightOpacity} />
 
       {/* Eyebrows */}
-      <Path d="M292,248 Q305,236 318,247" fill="none" stroke="#073D30" strokeWidth={3.5} strokeLinecap="round" />
-      <Path d="M362,247 Q375,236 388,248" fill="none" stroke="#073D30" strokeWidth={3.5} strokeLinecap="round" />
+      <Path d="M292,248 Q305,236 318,247" fill="none" stroke={C.eye} strokeWidth={3.5} strokeLinecap="round" />
+      <Path d="M362,247 Q375,236 388,248" fill="none" stroke={C.eye} strokeWidth={3.5} strokeLinecap="round" />
 
-      {/* Eyes — handles blink, sleepy, wink, and open states */}
+      {/* Eyes */}
       <Eyes />
 
       {/* Blush */}
-      <Circle cx={288} cy={304} r={13} fill="#F0997B" opacity={0.5} />
-      <Circle cx={392} cy={304} r={13} fill="#F0997B" opacity={0.5} />
+      <Circle cx={288} cy={304} r={13} fill={C.blush} opacity={C.blushOpacity} />
+      <Circle cx={392} cy={304} r={13} fill={C.blush} opacity={C.blushOpacity} />
 
-      {/* Mouth — smile arc or open mouth for excited */}
+      {/* Mouth */}
       <Mouth />
     </Svg>
   );
@@ -153,11 +252,12 @@ export default function Mascot({
   expression = "happy",
   variant = "classic",
   celebration = false,
+  talking = false,
   onPress,
   message = null,
   style,
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const reduceMotion = useReducedMotion();
   const dropSide = size * 0.62;
   const bounceAnim = useRef(new Animated.Value(0)).current;
@@ -165,6 +265,7 @@ export default function Mascot({
   const [isBlinking, setIsBlinking] = useState(false);
   const blinkTimerRef = useRef(null);
 
+  // Celebration bounce
   useEffect(() => {
     if (!celebration) {
       bounceAnim.setValue(0);
@@ -184,8 +285,7 @@ export default function Mascot({
     return () => sequence.stop();
   }, [celebration, reduceMotion]);
 
-  // ── Idle float (gentle 6px bob, 2s cycle) ──
-  // Skipped when reduced motion is enabled
+  // Idle float (gentle 6px bob, 2s cycle)
   useEffect(() => {
     if (reduceMotion) return;
     const loop = Animated.loop(
@@ -198,8 +298,7 @@ export default function Mascot({
     return () => loop.stop();
   }, [reduceMotion]);
 
-  // ── Blink cycle (every 4-6s) ──
-  // Skipped when reduced motion is enabled
+  // Blink cycle (every 4-6s)
   useEffect(() => {
     if (reduceMotion) return;
     const scheduleBlink = () => {
@@ -228,7 +327,6 @@ export default function Mascot({
     outputRange: [0, -6],
   });
 
-  // Combine float (idle) and bounce (celebration) — celebration overrides
   const translateY = useMemo(
     () => (celebration ? bounce : floatOffset),
     [celebration]
@@ -251,7 +349,14 @@ export default function Mascot({
         </View>
       )}
 
-      <SvgBody size={size} expression={expression} isBlinking={isBlinking} variant={variant} />
+      <SvgBody
+        size={size}
+        expression={expression}
+        isBlinking={isBlinking}
+        variant={variant}
+        talking={talking}
+        isDark={isDark}
+      />
 
       <Accessory variant={variant} size={dropSide} />
     </Animated.View>
