@@ -39,6 +39,7 @@ import FireStreak from "../components/FireStreak";
 import WaterFill from "../components/WaterFill";
 import PressableScale from "../components/PressableScale";
 import Toast from "../components/Toast";
+import DrinkSizePicker from "../components/DrinkSizePicker";
 import { type, fontSize, lineHeight } from "../constants/typography";
 import { space } from "../constants/spacing";
 
@@ -48,8 +49,6 @@ const REMIND_OPTIONS = [
   { minutes: 120, label: "2 hrs" },
   { minutes: 150, label: "2 hrs & 30 mins" },
 ];
-
-const AMOUNT_OPTIONS = [100, 200, 250, 500];
 
 /** Tiny SVG glass icon — drinking glass shape */
 function GlassIcon({ filled, color, emptyColor, size = 16 }) {
@@ -113,12 +112,13 @@ export default function HomeScreen({ navigation }) {
   const [showStreakBanner, setShowStreakBanner] = useState(true);
   const [showWeatherBanner, setShowWeatherBanner] = useState(true);
   const streakCardRef = React.useRef(null);
-  const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
+  const EXPRESSIONS = ["happy", "idle", "excited", "reminding", "sleepy"];
   const lastLogRef = React.useRef(0);
   const waterFillRef = useRef(null);
   const reducedMotion = useReducedMotion();
   const goalCyclesRef = useRef(0); // tracks completed goal cycles for wrap-around celebration
   const mountGuard = useRef(true);
+  const mascotTalkingRef = useRef(false);
   const [waterWidth, setWaterWidth] = useState(Dimensions.get("window").width - 48);
 
   // Load everything on mount
@@ -352,15 +352,30 @@ export default function HomeScreen({ navigation }) {
     })();
   }, []);
 
+  // Keep ref in sync for auto-cycle timer
+  useEffect(() => {
+    mascotTalkingRef.current = mascotTalking;
+  }, [mascotTalking]);
+
+  // Auto-cycle mascot expression every ~12s so expressions don't get stuck
+  useEffect(() => {
+    const autoCycle = setInterval(() => {
+      if (mascotTalkingRef.current) return;
+      setMascotExpression((prev) => {
+        const idx = EXPRESSIONS.indexOf(prev);
+        return EXPRESSIONS[(idx + 1) % EXPRESSIONS.length];
+      });
+      setMascotMessage(getRandomMessage());
+    }, 12000);
+    return () => clearInterval(autoCycle);
+  }, []);
+
   const cycleExpression = useCallback(() => {
     if (mascotTalking) return;
     setMascotTalking(true);
     setTimeout(() => {
       setMascotTalking(false);
-      setMascotExpression((prev) => {
-        const idx = EXPRESSIONS.indexOf(prev);
-        return EXPRESSIONS[(idx + 1) % EXPRESSIONS.length];
-      });
+      setMascotExpression("idle");
       setMascotMessage(getRandomMessage());
     }, 1800);
   }, [mascotTalking]);
@@ -545,17 +560,27 @@ export default function HomeScreen({ navigation }) {
             {glassesFromMl} / {dailyGoal} glasses
           </Text>
 
-          {/* Glass-shaped icons — one per daily goal */}
+          {/* Glass-shaped icons — one per daily goal. Fire behind filled glasses once 3+ drinks */}
           <View style={s.glassesRow}>
-            {Array.from({ length: Math.min(dailyGoal, 16) }, (_, i) => (
-              <GlassIcon
-                key={i}
-                filled={i < glassesFromMl}
-                color={colors.primary}
-                emptyColor={colors.border}
-                size={16}
-              />
-            ))}
+            {Array.from({ length: Math.min(dailyGoal, 16) }, (_, i) => {
+              const filled = i < glassesFromMl;
+              const showFire = filled && glassesFromMl >= 3;
+              return (
+                <View key={i} style={s.glassSlot}>
+                  {showFire && (
+                    <View style={s.glassFire}>
+                      <FireStreak size={28} />
+                    </View>
+                  )}
+                  <GlassIcon
+                    filled={filled}
+                    color={colors.primary}
+                    emptyColor={colors.border}
+                    size={16}
+                  />
+                </View>
+              );
+            })}
           </View>
 
           <View style={s.waterGlassOuter}>
@@ -661,19 +686,14 @@ export default function HomeScreen({ navigation }) {
         <PressableScale
           style={s.drinkButton}
           onPress={() => {
-            if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Heavy);
-            logDrink(drinkAmount);
-          }}
-          onLongPress={() => {
             if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Light);
             setShowAmountPicker(true);
           }}
-          delayLongPress={300}
-          accessibilityLabel={`Log water drink, ${drinkAmount} milliliters`}
+          accessibilityLabel="Log water drink — choose amount"
           accessibilityRole="button"
         >
           <Ionicons name="add-circle" size={24} color="#fff" />
-          <Text style={s.drinkButtonText}>I drank water ({drinkAmount}ml)</Text>
+          <Text style={s.drinkButtonText}>I drank water</Text>
         </PressableScale>
 
         {/* ── Start / Stop Reminder Button ── */}
@@ -756,41 +776,15 @@ export default function HomeScreen({ navigation }) {
         )}
       </ScrollView>
 
-      <Modal visible={showAmountPicker} transparent animationType="slide">
-        <TouchableOpacity
-          style={s.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowAmountPicker(false)}
-        >
-          <View style={s.modalSheet}>
-            <Text style={s.modalTitle}>How much did you drink?</Text>
-            {AMOUNT_OPTIONS.map((amount) => (
-              <PressableScale
-                key={amount}
-                style={s.modalOption}
-                onPress={() => {
-                  if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Light);
-                  logDrink(amount);
-                  setShowAmountPicker(false);
-                }}
-              >
-                <Ionicons
-                  name={amount === drinkAmount ? "water" : "water-outline"}
-                  size={22}
-                  color={colors.primary}
-                />
-                <Text style={s.modalOptionText}>{amount} ml</Text>
-              </PressableScale>
-            ))}
-            <TouchableOpacity
-              style={s.modalCancel}
-              onPress={() => setShowAmountPicker(false)}
-            >
-              <Text style={s.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <DrinkSizePicker
+        visible={showAmountPicker}
+        onSelect={(amount) => {
+          if (!reducedMotion) triggerHaptic(ImpactFeedbackStyle.Light);
+          logDrink(amount);
+          setShowAmountPicker(false);
+        }}
+        onDismiss={() => setShowAmountPicker(false)}
+      />
 
       <AchievementPopup
         achievements={popupAchievements}
@@ -817,7 +811,7 @@ function makeStyles(colors) {
     scroll: {
       alignItems: "center",
       paddingHorizontal: space("xl"),
-      paddingTop: 40,
+      paddingTop: 16,
       paddingBottom: space("3xl"),
     },
     header: {
@@ -965,6 +959,17 @@ function makeStyles(colors) {
       gap: 6,
       marginTop: space("sm"),
       marginBottom: space("md"),
+    },
+    glassSlot: {
+      width: 18,
+      height: 24,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    glassFire: {
+      position: "absolute",
+      top: -8,
+      left: -2,
     },
     waterGlassOuter: {
       position: "relative",
@@ -1122,50 +1127,6 @@ function makeStyles(colors) {
       color: "#fff",
       fontWeight: "600",
       fontSize: fontSize("caption"),
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: colors.overlay,
-      justifyContent: "flex-end",
-    },
-    modalSheet: {
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: space("xl"),
-      borderTopRightRadius: space("xl"),
-      padding: space("xl"),
-      paddingBottom: space("3xl"),
-    },
-    modalTitle: {
-      fontSize: fontSize("body"),
-      fontWeight: "700",
-      color: colors.text,
-      marginBottom: space("lg"),
-      textAlign: "center",
-    },
-    modalOption: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: space("md"),
-      paddingVertical: space("lgm"),
-      paddingHorizontal: space("lg"),
-      borderRadius: space("md"),
-      backgroundColor: colors.surfaceSecondary,
-      marginBottom: space("sm"),
-    },
-    modalOptionText: {
-      fontSize: fontSize("body"),
-      fontWeight: "600",
-      color: colors.text,
-    },
-    modalCancel: {
-      alignItems: "center",
-      paddingVertical: space("lgm"),
-      marginTop: space("xs"),
-    },
-    modalCancelText: {
-      fontSize: fontSize("body"),
-      color: colors.textSecondary,
-      fontWeight: "600",
     },
 
     // ── Freeze prompt ──

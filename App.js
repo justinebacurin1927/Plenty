@@ -6,8 +6,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { getOnboarded } from "./utils/storage";
 import { useReducedMotion } from "./utils/motion";
-import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold } from "@expo-google-fonts/quicksand";
-import { Nunito_400Regular, Nunito_500Medium, Nunito_600SemiBold, Nunito_700Bold } from "@expo-google-fonts/nunito";
+import { useFonts } from "expo-font";
+import { Fredoka_400Regular, Fredoka_500Medium, Fredoka_600SemiBold, Fredoka_700Bold } from "@expo-google-fonts/fredoka";
+import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from "@expo-google-fonts/poppins";
 
 // ═══ Logger — captures console.log/warn/error from boot ═══
 import "./utils/logger";
@@ -105,14 +106,14 @@ function AppNavigator() {
 export default function App() {
   const [onboarded, setOnboarded] = useState(null); // null = loading
   const [fontsLoaded] = useFonts({
-    "Quicksand-Bold": Quicksand_700Bold,
-    "Quicksand-SemiBold": Quicksand_600SemiBold,
-    "Quicksand-Medium": Quicksand_500Medium,
-    "Quicksand-Regular": Quicksand_400Regular,
-    "Nunito-Bold": Nunito_700Bold,
-    "Nunito-SemiBold": Nunito_600SemiBold,
-    "Nunito-Medium": Nunito_500Medium,
-    "Nunito-Regular": Nunito_400Regular,
+    "Fredoka-Bold": Fredoka_700Bold,
+    "Fredoka-SemiBold": Fredoka_600SemiBold,
+    "Fredoka-Medium": Fredoka_500Medium,
+    "Fredoka-Regular": Fredoka_400Regular,
+    "Poppins-Bold": Poppins_700Bold,
+    "Poppins-SemiBold": Poppins_600SemiBold,
+    "Poppins-Medium": Poppins_500Medium,
+    "Poppins-Regular": Poppins_400Regular,
   });
 
   useEffect(() => {

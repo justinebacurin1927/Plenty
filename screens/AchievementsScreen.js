@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import Mascot, { getRandomMessage } from "../components/Mascot";
 import {
   getLogs,
   getSettings,
@@ -34,24 +33,10 @@ export default function AchievementsScreen() {
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [mascotExpression, setMascotExpression] = useState("happy");
-  const [mascotMessage, setMascotMessage] = useState(null);
-  const [mascotVariant, setMascotVariant] = useState("classic");
   const [sharingItem, setSharingItem] = useState(null);
   const [streakData, setStreakData] = useState(null);
   const [milestones, setMilestones] = useState([]);
   const achievementCardRef = useRef(null);
-  const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
-
-  const cycleExpression = () => {
-    setMascotExpression((prev) => {
-      const idx = EXPRESSIONS.indexOf(prev);
-      return EXPRESSIONS[(idx + 1) % EXPRESSIONS.length];
-    });
-    setMascotMessage(getRandomMessage());
-    if (window._mascotTimer) clearTimeout(window._mascotTimer);
-    window._mascotTimer = setTimeout(() => setMascotMessage(null), 2500);
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -70,8 +55,6 @@ export default function AchievementsScreen() {
             if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
             return b.percent - a.percent;
           });
-          setMascotVariant(settings.mascotVariant || "classic");
-
           // Compute milestone data
           if (sData) {
             setStreakData(sData);
@@ -153,7 +136,6 @@ export default function AchievementsScreen() {
   return (
     <SafeAreaView style={s.container}>
       <View style={s.header}>
-        <Mascot size={70} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
         <View style={s.headerText}>
           <Text style={s.title}>Achievements</Text>
           <Text style={s.subtitle}>

@@ -14,7 +14,6 @@ import {
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import Mascot, { getRandomMessage } from "../components/Mascot";
 import {
   getSettings,
   saveSettings,
@@ -54,9 +53,6 @@ export default function SettingsScreen() {
   const s = makeStyles(colors);
 
   const [settings, setSettings] = useState(null);
-  const [mascotExpression, setMascotExpression] = useState("happy");
-  const [mascotVariant, setMascotVariant] = useState("classic");
-  const [mascotMessage, setMascotMessage] = useState(null);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const [weightText, setWeightText] = useState("");
   const [patternLulls, setPatternLulls] = useState([]);
@@ -64,17 +60,6 @@ export default function SettingsScreen() {
   const [exporting, setExporting] = useState(null);
   const [exportExpanded, setExportExpanded] = useState(false);
   const [messagesExpanded, setMessagesExpanded] = useState(false);
-  const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
-
-  const cycleExpression = () => {
-    setMascotExpression((prev) => {
-      const idx = EXPRESSIONS.indexOf(prev);
-      return EXPRESSIONS[(idx + 1) % EXPRESSIONS.length];
-    });
-    setMascotMessage(getRandomMessage());
-    if (window._mascotTimer) clearTimeout(window._mascotTimer);
-    window._mascotTimer = setTimeout(() => setMascotMessage(null), 2500);
-  };
 
   useEffect(() => {
     loadSettings().catch((e) =>
@@ -90,7 +75,6 @@ export default function SettingsScreen() {
     setSettings(s);
     setUnlockedAchievements(unlocked);
     if (s.weightKg) setWeightText(String(s.weightKg));
-    setMascotVariant(s.mascotVariant || "classic");
 
     try {
       const logs = await getLogs();
@@ -164,7 +148,6 @@ export default function SettingsScreen() {
     <SafeAreaView style={s.container}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <View style={s.header}>
-          <Mascot size={80} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
           <Text style={s.title}>Settings</Text>
         </View>
 

@@ -5,31 +5,31 @@ import { type, fontSize, lineHeight } from "../constants/typography";
 
 describe("type tokens", () => {
   it("exports display token with expected values", () => {
-    expect(type.display).toEqual({ fontSize: 36, fontWeight: "800", lineHeight: 44 });
+    expect(type.display).toEqual({ fontSize: 36, fontWeight: "700", lineHeight: 44, fontFamily: "Fredoka-Bold" });
   });
 
   it("exports title token with expected values", () => {
-    expect(type.title).toEqual({ fontSize: 28, fontWeight: "700", lineHeight: 36 });
+    expect(type.title).toEqual({ fontSize: 28, fontWeight: "700", lineHeight: 36, fontFamily: "Fredoka-Bold" });
   });
 
   it("exports heading token with expected values", () => {
-    expect(type.heading).toEqual({ fontSize: 22, fontWeight: "700", lineHeight: 28 });
+    expect(type.heading).toEqual({ fontSize: 22, fontWeight: "600", lineHeight: 28, fontFamily: "Fredoka-SemiBold" });
   });
 
   it("exports body token with expected values", () => {
-    expect(type.body).toEqual({ fontSize: 16, fontWeight: "400", lineHeight: 24 });
+    expect(type.body).toEqual({ fontSize: 16, fontWeight: "400", lineHeight: 24, fontFamily: "Poppins-Regular" });
   });
 
   it("exports label token with expected values", () => {
-    expect(type.label).toEqual({ fontSize: 15, fontWeight: "600", lineHeight: 22 });
+    expect(type.label).toEqual({ fontSize: 15, fontWeight: "600", lineHeight: 22, fontFamily: "Poppins-SemiBold" });
   });
 
   it("exports caption token with expected values", () => {
-    expect(type.caption).toEqual({ fontSize: 13, fontWeight: "600", lineHeight: 18 });
+    expect(type.caption).toEqual({ fontSize: 13, fontWeight: "600", lineHeight: 18, fontFamily: "Poppins-SemiBold" });
   });
 
   it("exports small token with expected values", () => {
-    expect(type.small).toEqual({ fontSize: 12, fontWeight: "400", lineHeight: 16 });
+    expect(type.small).toEqual({ fontSize: 12, fontWeight: "400", lineHeight: 16, fontFamily: "Poppins-Regular" });
   });
 });
 

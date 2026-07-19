@@ -75,7 +75,7 @@ function SvgBody({ size, expression, isBlinking, variant, talking, isDark }) {
     eye: isDark ? "#04122A" : "#0A2E4F",
     eyeHighlight: isDark ? "#EAF6FF" : "#FFFFFF",
     blush: isDark ? "#7FB8E8" : "#F5A9A0",
-    blushOpacity: 0.45,
+    blushOpacity: 0.6,
     shadow: isDark ? "#000000" : "#0C3B6B",
     shadowOpacity: isDark ? 0.35 : 0.18,
     highlight: "#EAF6FF",
@@ -132,7 +132,7 @@ function SvgBody({ size, expression, isBlinking, variant, talking, isDark }) {
       );
     }
     if (expression === "happy" || expression === "happier") {
-      // Squinted happy arcs ^ ^  (from droplet(v2-happy).svg)
+      // Squinted happy arcs ^ ^  (v2: unchanged from current)
       return (
         <>
           <Path d="M296,262 Q306,252 316,262" fill="none" stroke={C.eye} strokeWidth={4} strokeLinecap="round" />
@@ -160,13 +160,17 @@ function SvgBody({ size, expression, isBlinking, variant, talking, isDark }) {
     if (expression === "excited") {
       return <Ellipse cx={340} cy={312} rx={16} ry={10} fill={C.eye} />;
     }
+    if (expression === "happy") {
+      // v2-happy: higher smile — cheeks lift when squinting
+      return <Path d="M308,296 Q340,326 372,296" fill="none" stroke={C.eye} strokeWidth={4.5} strokeLinecap="round" />;
+    }
     if (expression === "happier") {
       return <Path d="M300,302 Q340,342 380,302" fill="none" stroke={C.eye} strokeWidth={4.5} strokeLinecap="round" />;
     }
     if (expression === "sleepy") {
       return <Path d="M315,305 Q340,318 365,305" fill="none" stroke={C.eye} strokeWidth={3} strokeLinecap="round" />;
     }
-    // Default smile (happy, reminding)
+    // Default smile (reminding, idle)
     return <Path d="M308,302 Q340,332 372,302" fill="none" stroke={C.eye} strokeWidth={4.5} strokeLinecap="round" />;
   }
 
@@ -191,11 +195,11 @@ function SvgBody({ size, expression, isBlinking, variant, talking, isDark }) {
         )}
       </Defs>
 
-      {/* Shadow */}
+      {/* Shadow — v2: cy=400, cy=395 was v1 */}
       {isDark ? (
-        <Ellipse cx={340} cy={395} rx={70} ry={12} fill={C.shadow} opacity={C.shadowOpacity} />
+        <Ellipse cx={340} cy={400} rx={70} ry={12} fill={C.shadow} opacity={C.shadowOpacity} />
       ) : (
-        <Ellipse cx={340} cy={395} rx={70} ry={12} fill={C.shadow} opacity={C.shadowOpacity} />
+        <Ellipse cx={340} cy={400} rx={70} ry={12} fill={C.shadow} opacity={C.shadowOpacity} />
       )}
 
       {/* Dark mode: crescent moon */}
@@ -217,6 +221,9 @@ function SvgBody({ size, expression, isBlinking, variant, talking, isDark }) {
         <Circle cx={340} cy={260} r={140} fill="url(#glow)" />
       )}
 
+      {/* Sparkle star — v2 brand detail */}
+      <Path d="M410,140 L414,150 L424,153 L414,156 L410,166 L406,156 L396,153 L406,150 Z" fill="#FFFFFF" />
+
       {/* Body droplet */}
       <Path
         d="M340,90 C340,90 250,225 250,300 C250,353 290,392 340,392 C390,392 430,353 430,300 C430,225 340,90 340,90 Z"
@@ -237,9 +244,18 @@ function SvgBody({ size, expression, isBlinking, variant, talking, isDark }) {
       {/* Eyes */}
       <Eyes />
 
-      {/* Blush */}
-      <Circle cx={288} cy={304} r={13} fill={C.blush} opacity={C.blushOpacity} />
-      <Circle cx={392} cy={304} r={13} fill={C.blush} opacity={C.blushOpacity} />
+      {/* Blush — v2: r=12, happy shifts blush up to cy=300 */}
+      {expression === "happy" || expression === "happier" ? (
+        <>
+          <Circle cx={288} cy={300} r={12} fill={C.blush} opacity={C.blushOpacity} />
+          <Circle cx={392} cy={300} r={12} fill={C.blush} opacity={C.blushOpacity} />
+        </>
+      ) : (
+        <>
+          <Circle cx={288} cy={304} r={12} fill={C.blush} opacity={C.blushOpacity} />
+          <Circle cx={392} cy={304} r={12} fill={C.blush} opacity={C.blushOpacity} />
+        </>
+      )}
 
       {/* Mouth */}
       <Mouth />
@@ -285,18 +301,38 @@ export default function Mascot({
     return () => sequence.stop();
   }, [celebration, reduceMotion]);
 
-  // Idle float (gentle 12px bob, 1.6s cycle)
+  // Idle float — orbital loop matching v2 SVG @keyframes loop (4s cycle)
+  //   0%: translate(0, 0) rotate(0deg)
+  //  25%: translate(35, -20) rotate(4deg)
+  //  50%: translate(0, -35) rotate(0deg)
+  //  75%: translate(-35, -20) rotate(-4deg)
+  // 100%: translate(0, 0) rotate(0deg)
   useEffect(() => {
     if (reduceMotion) return;
-    const loop = Animated.loop(
+    const orbitLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(floatAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(floatAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0.25, duration: 1000, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0.5,  duration: 1000, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0.75, duration: 1000, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 1,    duration: 1000, useNativeDriver: true }),
       ])
     );
-    loop.start();
-    return () => loop.stop();
-  }, [reduceMotion]);
+    orbitLoop.start();
+    return () => orbitLoop.stop();
+  }, [reduceMotion, size]);
+
+  const orbitX = floatAnim.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [0, 35, 0, -35, 0],
+  });
+  const orbitY = floatAnim.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [0, -20, -35, -20, 0],
+  });
+  const orbitRotate = floatAnim.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: ["0deg", "4deg", "0deg", "-4deg", "0deg"],
+  });
 
   // Blink cycle (every 4-6s)
   useEffect(() => {
@@ -322,21 +358,23 @@ export default function Mascot({
     outputRange: [-8, 0, -8],
   });
 
-  const floatOffset = floatAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -12],
-  });
-
-  const translateY = useMemo(
-    () => (celebration ? bounce : floatOffset),
-    [celebration]
-  );
+  const v2Scale = size / 680;
 
   const content = (
     <Animated.View
       style={[
         styles.wrapper,
-        { width: size, height: size * 1.05, transform: [{ translateY }] },
+        {
+          width: size,
+          height: size * 1.05,
+          transform: celebration
+            ? [{ translateY: bounce }]
+            : [
+                { translateX: Animated.multiply(orbitX, v2Scale) },
+                { translateY: Animated.multiply(orbitY, v2Scale) },
+                { rotate: orbitRotate },
+              ],
+        },
         style,
       ]}
     >

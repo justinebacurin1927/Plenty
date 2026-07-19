@@ -1,0 +1,110 @@
+<svg viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg">
+<title>A cheerful floating water droplet character in blue tones that talks once then smiles</title>
+<defs>
+<linearGradient id="dropBody" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0%" stop-color="#8FC7F2"/>
+  <stop offset="55%" stop-color="#4A9EE8"/>
+  <stop offset="100%" stop-color="#1E6FBF"/>
+</linearGradient>
+<radialGradient id="shine" cx="35%" cy="30%" r="70%">
+  <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9"/>
+  <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<style>
+.loop { animation: loop 4s ease-in-out infinite; transform-origin: 340px 260px; }
+@keyframes loop {
+  0%   { transform: translate(0px, 0px) rotate(0deg); }
+  25%  { transform: translate(35px, -20px) rotate(4deg); }
+  50%  { transform: translate(0px, -35px) rotate(0deg); }
+  75%  { transform: translate(-35px, -20px) rotate(-4deg); }
+  100% { transform: translate(0px, 0px) rotate(0deg); }
+}
+.shadow { animation: shadowLoop 4s ease-in-out infinite; transform-origin: 340px 400px; }
+@keyframes shadowLoop {
+  0%   { transform: translateX(0px) scale(1); opacity: 0.2; }
+  25%  { transform: translateX(35px) scale(0.85); opacity: 0.13; }
+  50%  { transform: translateX(0px) scale(0.7); opacity: 0.08; }
+  75%  { transform: translateX(-35px) scale(0.85); opacity: 0.13; }
+  100% { transform: translateX(0px) scale(1); opacity: 0.2; }
+}
+.eyeOpen { animation: eyeOpen 4.5s steps(1) infinite; }
+@keyframes eyeOpen {
+  0%, 90% { opacity: 1; }
+  91%, 97% { opacity: 0; }
+  98%, 100% { opacity: 1; }
+}
+.eyeClosed { animation: eyeClosed 4.5s steps(1) infinite; opacity: 0; }
+@keyframes eyeClosed {
+  0%, 90% { opacity: 0; }
+  91%, 97% { opacity: 1; }
+  98%, 100% { opacity: 0; }
+}
+.jiggle { animation: jiggle 4s ease-in-out infinite; transform-origin: 340px 380px; }
+@keyframes jiggle {
+  0%, 50%, 100% { transform: scale(1, 1); }
+  46% { transform: scale(1.08, 0.9); }
+  54% { transform: scale(0.95, 1.06); }
+  58% { transform: scale(1.02, 0.98); }
+}
+.sparkle { animation: twinkle 4s ease-in-out infinite; transform-origin: 430px 150px; }
+@keyframes twinkle {
+  0%, 60%, 100% { opacity: 0; transform: scale(0.4); }
+  70% { opacity: 1; transform: scale(1); }
+  80% { opacity: 0; transform: scale(0.4); }
+}
+.mouth {
+  animation: talk 2.2s cubic-bezier(.45,0,.55,1) 1 forwards,
+             talkFade 0.5s ease-in-out 1 forwards;
+  animation-delay: 0s, 1.7s;
+  transform-origin: 340px 312px;
+}
+@keyframes talk {
+  0%   { transform: scaleY(0.15); }
+  10%  { transform: scaleY(0.75); }
+  22%  { transform: scaleY(0.3); }
+  34%  { transform: scaleY(0.9); }
+  46%  { transform: scaleY(0.4); }
+  58%  { transform: scaleY(0.7); }
+  70%  { transform: scaleY(0.25); }
+  85%  { transform: scaleY(0.45); }
+  100% { transform: scaleY(0.15); }
+}
+@keyframes talkFade {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+.smile {
+  opacity: 0;
+  animation: smileFade 0.6s ease-in-out 1 forwards;
+  animation-delay: 1.6s;
+}
+@keyframes smileFade {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+</style>
+<ellipse class="shadow" cx="340" cy="400" rx="70" ry="12" fill="#0C3B6B"/>
+<g class="loop">
+  <g class="jiggle">
+    <path d="M340,90 C340,90 250,225 250,300 C250,353 290,392 340,392 C390,392 430,353 430,300 C430,225 340,90 340,90 Z" fill="url(#dropBody)" stroke="#155A9E" stroke-width="2.5"/>
+    <path d="M340,90 C340,90 250,225 250,300 C250,353 290,392 340,392 C390,392 430,353 430,300 C430,225 340,90 340,90 Z" fill="url(#shine)"/>
+    <ellipse cx="300" cy="225" rx="14" ry="30" fill="#EAF6FF" opacity="0.55"/>
+    <path d="M410,140 L414,150 L424,153 L414,156 L410,166 L406,156 L396,153 L406,150 Z" class="sparkle" fill="#FFFFFF"/>
+  </g>
+  <g class="eyeOpen">
+    <ellipse cx="306" cy="270" rx="9" ry="13" fill="#0A2E4F"/>
+    <ellipse cx="374" cy="270" rx="9" ry="13" fill="#0A2E4F"/>
+    <circle cx="309" cy="265" r="2.5" fill="#FFFFFF"/>
+    <circle cx="377" cy="265" r="2.5" fill="#FFFFFF"/>
+  </g>
+  <g class="eyeClosed">
+    <path d="M292,272 Q306,260 320,272" fill="none" stroke="#0A2E4F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M360,272 Q374,260 388,272" fill="none" stroke="#0A2E4F" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <circle cx="288" cy="304" r="12" fill="#F5A9A0" opacity="0.6"/>
+  <circle cx="392" cy="304" r="12" fill="#F5A9A0" opacity="0.6"/>
+  <ellipse class="mouth" cx="340" cy="312" rx="16" ry="10" fill="#0A2E4F"/>
+  <path class="smile" d="M308,302 Q340,332 372,302" fill="none" stroke="#0A2E4F" stroke-width="4.5" stroke-linecap="round"/>
+</g>
+</svg>

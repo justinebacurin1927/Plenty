@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import Mascot, { getRandomMessage } from "../components/Mascot";
 import MonthlyReport from "../components/MonthlyReport";
 import Heatmap from "../components/Heatmap";
 import StreakFlame from "../components/StreakFlame";
@@ -29,13 +28,9 @@ export default function LogScreen() {
   const [logs, setLogs] = useState([]);
   const [weekly, setWeekly] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [mascotVariant, setMascotVariant] = useState("classic");
-  const [mascotExpression, setMascotExpression] = useState("happy");
   const [lowDayPattern, setLowDayPattern] = useState(null);
-  const [mascotMessage, setMascotMessage] = useState(null);
   const [dailyGoal, setDailyGoal] = useState(8);
   const [streak, setStreak] = useState(0);
-  const EXPRESSIONS = ["happy", "excited", "reminding", "sleepy"];
   const reduceMotion = useReducedMotion();
 
   // Stable animated values for bar entrance animation
@@ -87,16 +82,6 @@ export default function LogScreen() {
     };
   }, [weekly, maxTotal, reduceMotion]);
 
-  const cycleExpression = () => {
-    setMascotExpression((prev) => {
-      const idx = EXPRESSIONS.indexOf(prev);
-      return EXPRESSIONS[(idx + 1) % EXPRESSIONS.length];
-    });
-    setMascotMessage(getRandomMessage());
-    if (window._mascotTimer) clearTimeout(window._mascotTimer);
-    window._mascotTimer = setTimeout(() => setMascotMessage(null), 2500);
-  };
-
   useFocusEffect(
     useCallback(() => {
       (async () => {
@@ -106,7 +91,6 @@ export default function LogScreen() {
           const days = await getDailyTotals();
           setWeekly(days);
           const settings = await getSettings();
-          setMascotVariant(settings.mascotVariant || "classic");
           setDailyGoal(settings.dailyGoal || 8);
           const strk = await getStreak(settings.dailyGoal);
           setStreak(strk);
@@ -166,7 +150,6 @@ export default function LogScreen() {
     <>
       <View style={s.header}>
         <View style={s.headerLeft}>
-          <Mascot size={80} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
           <View>
             <Text style={s.title}>Your Log</Text>
             <Text style={s.subtitle}>{logs.length} glasses today</Text>
@@ -238,7 +221,6 @@ export default function LogScreen() {
         <ScrollView contentContainerStyle={s.list}>
           {headerComponent}
           <View style={s.empty}>
-            <Mascot size={110} expression={mascotExpression} variant={mascotVariant} onPress={cycleExpression} message={mascotMessage} />
             <Text style={s.emptyText}>No drinks logged yet today</Text>
             <Text style={s.emptyHint}>
               Go to Home and tap "I drank water"
