@@ -1,5 +1,5 @@
 # generated: 2026-07-18
-# last_updated: 2026-07-19
+# last_updated: 2026-07-20
 # project: Plenty
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18
-last_updated: 2026-07-19
+last_updated: 2026-07-20
 project: Plenty
 project_key: NOKEY
 tracking_system: file-system
@@ -57,7 +57,7 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2 — Streak System
-  epic-2: in-progress
+  epic-2: done
   2-1-streak-engine: done
   2-2-heatmap: done
   2-3-rewards-ladder: done
@@ -65,15 +65,15 @@ development_status:
   2-5-streak-flame: done
   2-6-streak-on-widget: done
   2-7-streak-aware-notifications: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3 — Water Animation
-  epic-3: in-progress
+  epic-3: done
   3-1-water-fill-component: done
   3-2-water-fill-ripple: done
   3-3-count-up-numbers: done
   3-4-goal-reached-moment: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # Epic 4 — Onboarding
   epic-4: done
