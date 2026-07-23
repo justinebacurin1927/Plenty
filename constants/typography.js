@@ -12,9 +12,9 @@
  */
 
 export const type = {
-  display: { fontSize: 36, fontWeight: "700", lineHeight: 44, fontFamily: "Fredoka-Bold" },
-  title: { fontSize: 28, fontWeight: "700", lineHeight: 36, fontFamily: "Fredoka-Bold" },
-  heading: { fontSize: 22, fontWeight: "600", lineHeight: 28, fontFamily: "Fredoka-SemiBold" },
+  display: { fontSize: 36, fontWeight: "400", lineHeight: 44, fontFamily: "Bitrank" },
+  title: { fontSize: 28, fontWeight: "400", lineHeight: 36, fontFamily: "Bitrank" },
+  heading: { fontSize: 22, fontWeight: "400", lineHeight: 28, fontFamily: "Creamy_Chicken" },
   body: { fontSize: 16, fontWeight: "400", lineHeight: 24, fontFamily: "Poppins-Regular" },
   label: { fontSize: 15, fontWeight: "600", lineHeight: 22, fontFamily: "Poppins-SemiBold" },
   caption: { fontSize: 13, fontWeight: "600", lineHeight: 18, fontFamily: "Poppins-SemiBold" },

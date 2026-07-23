@@ -9,17 +9,17 @@
 
 import React from "react";
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { type } from "../constants/typography";
 
 const DRINK_OPTIONS = [
-  { ml: 100, label: "Small",   icon: "cafe-outline" },
-  { ml: 200, label: "Regular", icon: "water-outline" },
-  { ml: 250, label: "Standard", icon: "water",        recommended: true },
-  { ml: 330, label: "Can",     icon: "flask-outline" },
-  { ml: 500, label: "Bottle",  icon: "wine-outline" },
-  { ml: 750, label: "Large",   icon: "flask" },
+  { ml: 100, label: "Small",   icon: "cup-water" },
+  { ml: 200, label: "Regular", icon: "glass-mug" },
+  { ml: 250, label: "Standard", icon: "bottle-tonic",  recommended: true },
+  { ml: 330, label: "Can",     icon: "bottle-soda" },
+  { ml: 500, label: "Bottle",  icon: "glass-tulip" },
+  { ml: 750, label: "Large",   icon: "kettle" },
 ];
 
 export default function DrinkSizePicker({ visible, onSelect, onDismiss }) {
@@ -45,7 +45,7 @@ export default function DrinkSizePicker({ visible, onSelect, onDismiss }) {
                 onPress={() => onSelect(opt.ml)}
               >
                 <View style={[s.iconWrap, { backgroundColor: colors.primaryBg }]}>
-                  <Ionicons name={opt.icon} size={28} color={colors.primary} />
+                  <MaterialCommunityIcons name={opt.icon} size={28} color={colors.primary} />
                 </View>
                 <Text style={[s.optionMl, { color: colors.text }]}>{opt.ml}<Text style={s.mlUnit}>ml</Text></Text>
                 <Text style={[s.optionLabel, { color: colors.textSecondary }]}>{opt.label}</Text>

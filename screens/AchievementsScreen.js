@@ -36,7 +36,26 @@ export default function AchievementsScreen() {
   const [sharingItem, setSharingItem] = useState(null);
   const [streakData, setStreakData] = useState(null);
   const [milestones, setMilestones] = useState([]);
+  const [userName, setUserName] = useState("");
   const achievementCardRef = useRef(null);
+
+  const emojiToIcon = useCallback((emoji) => {
+    const map = {
+      "🌊": "water",
+      "💪": "fitness",
+      "🔥": "flame",
+      "🏅": "medal",
+      "🚀": "rocket",
+      "☀️": "sunny",
+      "🌙": "moon",
+      "📅": "calendar",
+      "🎯": "bullseye",
+      "⚡": "flash",
+      "🦸": "shield-checkmark",
+      "💎": "diamond",
+    };
+    return map[emoji] || "trophy";
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -49,6 +68,7 @@ export default function AchievementsScreen() {
             getUnlockedAchievements(),
             getAchievementProgress(),
           ]);
+          setUserName(settings.name || "");
           const sData = await getStreakData(settings.dailyGoal || 8).catch(() => null);
           const list = buildGalleryList(logs, settings, unlocked, progress);
           list.sort((a, b) => {
@@ -78,25 +98,18 @@ export default function AchievementsScreen() {
     }, [])
   );
 
-  const unlockedCount = items.filter((i) => i.unlocked).length;
-
   const renderCard = ({ item }) => (
     <TouchableOpacity
       style={[s.card, item.unlocked && s.cardUnlocked]}
       activeOpacity={item.unlocked ? 0.7 : 1}
-      onPress={async () => {
-        if (!item.unlocked) return;
-        setSharingItem(item);
-        // Wait for the ShareCard to render with the new data, then capture
-        setTimeout(async () => {
-          await captureAndShare(achievementCardRef, `I unlocked ${item.title} on Plenty!`);
-          setSharingItem(null);
-        }, 100);
-      }}
     >
-      <Text style={[s.cardEmoji, !item.unlocked && s.cardEmojiLocked]}>
-        {item.emoji}
-      </Text>
+      <View style={[s.cardIconWrap, { backgroundColor: item.unlocked ? colors.primaryBg : colors.surfaceSecondary }]}>
+        <Ionicons
+          name={emojiToIcon(item.emoji)}
+          size={28}
+          color={item.unlocked ? colors.primary : colors.textTertiary}
+        />
+      </View>
       <Text style={[s.cardTitle, !item.unlocked && s.cardTitleLocked]} numberOfLines={1}>
         {item.title}
       </Text>
@@ -108,7 +121,20 @@ export default function AchievementsScreen() {
         <View style={s.unlockedBadge}>
           <Ionicons name="checkmark-circle" size={14} color={colors.success} />
           <Text style={s.unlockedText}>Unlocked</Text>
-          <Ionicons name="share-outline" size={12} color={colors.success} style={{ marginLeft: 4 }} />
+          <TouchableOpacity
+            style={s.shareIconBtn}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              setSharingItem(item);
+              setTimeout(async () => {
+                await captureAndShare(achievementCardRef, `I unlocked ${item.title} on Plenty!`);
+                setSharingItem(null);
+              }, 100);
+            }}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Ionicons name="share-social-outline" size={14} color={colors.success} />
+          </TouchableOpacity>
         </View>
       ) : (
         <View style={s.progressSection}>
@@ -139,7 +165,7 @@ export default function AchievementsScreen() {
         <View style={s.headerText}>
           <Text style={s.title}>Achievements</Text>
           <Text style={s.subtitle}>
-            {unlockedCount} / {items.length} unlocked
+            Hey{userName ? ` ${userName}` : ""}! This is all your achievements
           </Text>
         </View>
       </View>
@@ -157,7 +183,7 @@ export default function AchievementsScreen() {
           numColumns={2}
           columnWrapperStyle={s.row}
           contentContainerStyle={s.grid}
-          ListHeaderComponent={
+          ListFooterComponent={
             milestones.length > 0 ? (
               <View style={s.rewardsSection}>
                 <Text style={[s.rewardsTitle, { color: colors.text }]}>
@@ -247,7 +273,8 @@ function makeStyles(colors) {
     },
     title: {
       fontSize: 28,
-      fontWeight: "700",
+      fontWeight: "400",
+      fontFamily: "Creamy_Chicken",
       color: colors.text,
     },
     subtitle: {
@@ -288,12 +315,13 @@ function makeStyles(colors) {
       borderWidth: 1.5,
       borderColor: colors.mascotMoodBorder,
     },
-    cardEmoji: {
-      fontSize: 40,
+    cardIconWrap: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      alignItems: "center",
+      justifyContent: "center",
       marginBottom: 8,
-    },
-    cardEmojiLocked: {
-      opacity: 0.35,
     },
     cardTitle: {
       fontSize: 14,
@@ -325,6 +353,15 @@ function makeStyles(colors) {
       fontSize: 12,
       fontWeight: "600",
       color: colors.success,
+    },
+    shareIconBtn: {
+      marginLeft: 6,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: colors.successLight,
+      alignItems: "center",
+      justifyContent: "center",
     },
     progressSection: {
       width: "100%",
@@ -374,7 +411,8 @@ function makeStyles(colors) {
     },
     rewardsTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontWeight: "400",
+      fontFamily: "Creamy_Chicken",
       marginBottom: 10,
     },
     rewardCard: {

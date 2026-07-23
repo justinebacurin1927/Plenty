@@ -7,6 +7,7 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  TouchableOpacity,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,7 +19,7 @@ import { getLowestHydrationDay } from "../utils/patterns";
 import { useTheme } from "../context/ThemeContext";
 import { useReducedMotion } from "../utils/motion";
 
-const MAX_BAR = 200;
+const MAX_BAR = 280;
 const WEEKLY_BARS = 7;
 
 export default function LogScreen() {
@@ -31,6 +32,9 @@ export default function LogScreen() {
   const [lowDayPattern, setLowDayPattern] = useState(null);
   const [dailyGoal, setDailyGoal] = useState(8);
   const [streak, setStreak] = useState(0);
+  const [userName, setUserName] = useState("");
+  const [logsPerPage, setLogsPerPage] = useState(10);
+  const [page, setPage] = useState(1);
   const reduceMotion = useReducedMotion();
 
   // Stable animated values for bar entrance animation
@@ -92,6 +96,7 @@ export default function LogScreen() {
           setWeekly(days);
           const settings = await getSettings();
           setDailyGoal(settings.dailyGoal || 8);
+          setUserName(settings.name || "");
           const strk = await getStreak(settings.dailyGoal);
           setStreak(strk);
 
@@ -132,10 +137,11 @@ export default function LogScreen() {
   const renderLogItem = useCallback(
     ({ item, index }) => {
       if (!item || !item.timestamp) return null;
+      const actualIndex = logs.indexOf(item);
       return (
         <View style={s.logItem}>
           <View style={s.logLeft}>
-            <Text style={s.logIndex}>#{logs.length - index}</Text>
+            <Text style={s.logIndex}>#{actualIndex >= 0 ? logs.length - actualIndex : index + 1}</Text>
             <Ionicons name="water" size={20} color={colors.primary} />
             <Text style={s.logAmount}>{item.amount || 250} ml</Text>
           </View>
@@ -143,16 +149,32 @@ export default function LogScreen() {
         </View>
       );
     },
-    [colors, logs.length]
+    [colors, logs]
   );
+
+  const todayDate = useMemo(() => {
+    const d = new Date();
+    return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  }, []);
+
+  const paginatedLogs = useMemo(() => {
+    const start = 0;
+    const end = logsPerPage;
+    return logs.slice(start, end);
+  }, [logs, logsPerPage]);
 
   const headerComponent = (
     <>
       <View style={s.header}>
         <View style={s.headerLeft}>
           <View>
-            <Text style={s.title}>Your Log</Text>
-            <Text style={s.subtitle}>{logs.length} glasses today</Text>
+            <Text style={s.greeting}>
+              Hello{userName ? `, ${userName}` : ""}!{'\n'}
+              <Text style={s.greetingSub}>This is your progress</Text>
+            </Text>
+          </View>
+          <View style={s.headerDate}>
+            <Text style={s.headerDateText}>{todayDate}</Text>
           </View>
         </View>
       </View>
@@ -199,7 +221,7 @@ export default function LogScreen() {
       {streak > 0 && (
         <View style={s.logStreakBanner}>
           <StreakFlame streakLength={streak} />
-          <Text style={s.logStreakText}>{streak} day streak 🔥</Text>
+          <Text style={s.logStreakText}>{streak} day streak</Text>
         </View>
       )}
 
@@ -208,6 +230,24 @@ export default function LogScreen() {
         <Text style={s.heatmapTitle}>Streak History</Text>
         <Heatmap goalGlasses={dailyGoal} />
       </View>
+
+      {/* Pagination controls */}
+      {logs.length > logsPerPage && (
+        <View style={s.pagination}>
+          {[10, 25, 50].map((n) => (
+            <TouchableOpacity
+              key={n}
+              style={[s.pageChip, logsPerPage === n && s.pageChipActive]}
+              onPress={() => setLogsPerPage(n)}
+            >
+              <Text style={[s.pageChipText, logsPerPage === n && s.pageChipTextActive]}>{n}</Text>
+            </TouchableOpacity>
+          ))}
+          <Text style={s.pageInfo}>
+            Showing 1–{Math.min(logsPerPage, logs.length)} of {logs.length}
+          </Text>
+        </View>
+      )}
     </>
   );
 
@@ -229,7 +269,7 @@ export default function LogScreen() {
         </ScrollView>
       ) : (
         <FlatList
-          data={logs}
+          data={paginatedLogs}
           keyExtractor={(item, index) => item?.id ?? String(index)}
           contentContainerStyle={s.list}
           style={{ flex: 1 }}
@@ -260,21 +300,37 @@ function makeStyles(colors) {
       paddingHorizontal: 24,
       paddingTop: 0,
       paddingBottom: 12,
+      flexDirection: "row",
+      alignItems: "flex-start",
     },
     headerLeft: {
+      flex: 1,
       flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
+      alignItems: "flex-start",
+      justifyContent: "space-between",
     },
-    title: {
-      fontSize: 28,
-      fontWeight: "700",
+    greeting: {
+      fontSize: 22,
+      fontWeight: "400",
+      fontFamily: "Creamy_Chicken",
       color: colors.text,
+      lineHeight: 30,
     },
-    subtitle: {
+    greetingSub: {
       fontSize: 15,
+      fontWeight: "400",
       color: colors.textSecondary,
-      marginTop: 4,
+    },
+    headerDate: {
+      backgroundColor: colors.surface,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: colors.radius.lg,
+    },
+    headerDateText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textSecondary,
     },
     weeklyCard: {
       backgroundColor: colors.surface,
@@ -285,41 +341,42 @@ function makeStyles(colors) {
       ...colors.elevation[1],
     },
     weeklyTitle: {
-      fontSize: 15,
-      fontWeight: "700",
+      fontSize: 17,
+      fontWeight: "400",
+      fontFamily: "Creamy_Chicken",
       color: colors.text,
       marginBottom: 16,
     },
     chartRow: {
       flexDirection: "row",
-      justifyContent: "space-between",
+      justifyContent: "space-around",
       alignItems: "flex-end",
-      height: MAX_BAR + 30,
+      height: MAX_BAR + 36,
     },
     barCol: {
       alignItems: "center",
       flex: 1,
     },
     barValue: {
-      fontSize: 11,
-      fontWeight: "600",
-      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.text,
       marginBottom: 4,
     },
     bar: {
-      width: 20,
-      borderRadius: colors.radius.sm,
+      width: 30,
+      borderRadius: colors.radius.md,
       backgroundColor: colors.primaryBg,
       overflow: "hidden",
       justifyContent: "flex-end",
     },
     barFill: {
       width: "100%",
-      borderRadius: colors.radius.sm,
+      borderRadius: colors.radius.md,
     },
     barLabel: {
       fontSize: 11,
-      fontWeight: "600",
+      fontWeight: "700",
       color: colors.textSecondary,
       marginTop: 6,
     },
@@ -424,11 +481,47 @@ function makeStyles(colors) {
     },
     heatmapTitle: {
       fontSize: 14,
-      fontWeight: "700",
+      fontWeight: "400",
+      fontFamily: "Creamy_Chicken",
       color: colors.text,
       marginBottom: 4,
       paddingHorizontal: 8,
       paddingTop: 4,
+    },
+    pagination: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      marginTop: 16,
+      marginBottom: 8,
+      paddingHorizontal: 24,
+    },
+    pageChip: {
+      paddingVertical: 6,
+      paddingHorizontal: 14,
+      borderRadius: 16,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    pageChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    pageChipText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.textSecondary,
+    },
+    pageChipTextActive: {
+      color: "#fff",
+    },
+    pageInfo: {
+      fontSize: 12,
+      fontWeight: "500",
+      color: colors.textTertiary,
+      marginLeft: 4,
     },
   });
 }

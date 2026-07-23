@@ -5,15 +5,15 @@ import { type, fontSize, lineHeight } from "../constants/typography";
 
 describe("type tokens", () => {
   it("exports display token with expected values", () => {
-    expect(type.display).toEqual({ fontSize: 36, fontWeight: "700", lineHeight: 44, fontFamily: "Fredoka-Bold" });
+    expect(type.display).toEqual({ fontSize: 36, fontWeight: "400", lineHeight: 44, fontFamily: "Bitrank" });
   });
 
   it("exports title token with expected values", () => {
-    expect(type.title).toEqual({ fontSize: 28, fontWeight: "700", lineHeight: 36, fontFamily: "Fredoka-Bold" });
+    expect(type.title).toEqual({ fontSize: 28, fontWeight: "400", lineHeight: 36, fontFamily: "Bitrank" });
   });
 
   it("exports heading token with expected values", () => {
-    expect(type.heading).toEqual({ fontSize: 22, fontWeight: "600", lineHeight: 28, fontFamily: "Fredoka-SemiBold" });
+    expect(type.heading).toEqual({ fontSize: 22, fontWeight: "400", lineHeight: 28, fontFamily: "Creamy_Chicken" });
   });
 
   it("exports body token with expected values", () => {

@@ -626,7 +626,8 @@ function makeStyles(colors) {
     },
     title: {
       fontSize: 28,
-      fontWeight: "700",
+      fontWeight: "400",
+      fontFamily: "Creamy_Chicken",
       color: colors.text,
     },
     row: {

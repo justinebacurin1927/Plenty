@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18
-last_updated: 2026-07-20
+last_updated: 2026-07-23
 project: Plenty
 project_key: NOKEY
 tracking_system: file-system
@@ -108,3 +108,12 @@ development_status:
   8-2-privacy-policy: done
   8-3-production-build-staged-rollout: done
   epic-8-retrospective: optional
+
+  # Epic 9 — Screen Redesign & UI Refresh
+  epic-9: in-progress
+  9-1-font-migration: done
+  9-2-drink-size-picker-icons: done
+  9-3-homescreen-redesign: done
+  9-4-logscreen-redesign: done
+  9-5-achievements-screen-redesign: done
+  epic-9-retrospective: optional

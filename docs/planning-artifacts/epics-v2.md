@@ -662,4 +662,112 @@ Complete Play Store listing, privacy policy, build, and staged rollout. This is 
 
 ---
 
-> **After Epic 8:** V2 is live. Rest. Then V2.1 (Adaptive Reminders) and V2.2 (iOS Parity) are the next tracked work.
+---
+
+## Epic 9 — Screen Redesign & UI Refresh
+
+| Field | Value |
+|-------|-------|
+| **Priority** | SHOULD |
+| **Theme** | Visual overhaul across all three main screens — fonts, layout, icons, personalization |
+| **Depends on** | Nothing |
+| **Build order** | 10th |
+
+### Objective
+
+Refresh the entire app's visual identity: migrate from Fredoka/Poppins to Bitrank (titles) and Creamy Chicken Zips (headers), redesign the HomeScreen layout (mascot spacing, slim glass, centered CTA, polished banners), overhaul LogScreen (personal greeting, date header, space-filling chart, streak banner redesign), and polish AchievementsScreen (personal greeting, reorder sections, proper icons). Every change is visual — no new features.
+
+### Stories
+
+#### 9.1 — Font migration (Bitrank + Creamy Chicken Zips)
+**User Story:** As a user, I want the app to use the new custom fonts — Bitrank for big titles and Creamy Chicken Zips for headers — so the app feels more unique and friendly.
+
+**Acceptance Criteria:**
+- `Bitrank.otf` loaded at boot from `assets/fonts/Bitrank/Bitrank.otf`
+- `Creamy_Chicken.otf` loaded at boot from `assets/fonts/Creamy_Chicken/Creamy_Chicken.otf`
+- `constants/typography.js` updated:
+  - `display`, `title` → use `"Bitrank"` (single-weight, uses fontWeight of the OTF)
+  - `heading` → use `"Creamy_Chicken"` (single-weight)
+  - `body`, `label`, `caption`, `small` → remain Poppins (unchanged)
+- `App.js` font loading updated:
+  - Remove `@expo-google-fonts/fredoka` and `@expo-google-fonts/poppins` imports
+  - Load local OTF fonts via `useFonts` using `require()` paths
+
+**Files:**
+- `App.js` (edit — font loading)
+- `constants/typography.js` (edit — font families)
+- `assets/fonts/Bitrank/Bitrank.otf` (new — extracted from zip)
+- `assets/fonts/Creamy_Chicken/Creamy_Chicken.otf` (new — extracted from zip)
+
+---
+
+#### 9.2 — DrinkSizePicker icon refresh (accurate water containers)
+**User Story:** As a user, I want the drink size picker to show icons that actually look like the drink containers I use, so the visual matches reality.
+
+**Acceptance Criteria:**
+- All 6 drink options get accurate MaterialCommunityIcons instead of generic Ionicons
+- Icon mapping for each size clearly communicates the container shape:
+  - 100ml → `cup-water` (small glass)
+  - 200ml → `glass-mug` (mug)
+  - 250ml → `bottle-tonic` (standard glass)
+  - 330ml → `bottle-soda` (can-shaped)
+  - 500ml → `glass-tulip` (water bottle)
+  - 750ml → `kettle` (large carafe)
+- Import changed from `@expo/vector-icons/Ionicons` to `@expo/vector-icons/MaterialCommunityIcons`
+
+**Files:**
+- `components/DrinkSizePicker.js` (edit — icons + import)
+
+---
+
+#### 9.3 — HomeScreen redesign (mascot spacing, glass shape, banners, CTA)
+**User Story:** As a user, I want the home screen to look tighter and more polished — mascot closer to the dialogue, a slimmer glass, refined banners, and the drink button centered.
+
+**Acceptance Criteria:**
+- Mascot and title/dialogue are brought closer together (reduce vertical gap between them)
+- Glass SVG path is slimmed — narrower top-to-bottom silhouette (currently top margin 16%, bottom margin 26%)
+- Fire streak on glass redesigned — current looks mismatched
+- Warning (red) banner redesigned — no longer looks like a system error; app-grade design with the Plenty aesthetic
+- Average/goal suggestion banner redesigned to match other banners visually
+- "I drank water" button centered horizontally (currently left-aligned)
+- All changes preserve dark mode, reduced-motion, and existing functionality
+
+**Files:**
+- `screens/HomeScreen.js` (edit)
+
+---
+
+#### 9.4 — LogScreen redesign (greeting, date header, space-filling chart, pagination)
+**User Story:** As a user, I want the log screen to feel personal and show my data efficiently — greeting me by name, filling the space well, and giving me control over the log list.
+
+**Acceptance Criteria:**
+- Personalized greeting "Hello, [name]! This is your progress" at the top (requires name loaded from settings)
+- Current date displayed on the left side of the header (reference: header(design).jpeg)
+- Last 7 Days bar graph redesigned to fill available space better — taller bars, better spacing (reference: tracker.jpeg)
+- Streak fire banner redesigned — clean look without raw emoji in text
+- Streak history table corrected (proper spacing, aligned cells)
+- Log list gets pagination/dropdown (show 10/25/50 entries at a time)
+- `name` field added to `DEFAULT_SETTINGS` in `utils/storage.js`
+
+**Files:**
+- `screens/LogScreen.js` (edit)
+- `utils/storage.js` (edit — add `name` field)
+
+---
+
+#### 9.5 — AchievementsScreen redesign (greeting, section order, icons, share)
+**User Story:** As a user, I want the achievements screen to feel personal and polished — greeting me by name, showing achievements first, and using proper icons.
+
+**Acceptance Criteria:**
+- Personalized subtitle "Hey [name]! This is all your achievements"
+- Section order reversed — achievements grid comes FIRST, streak rewards scroll moves BELOW
+- All emoji in achievement cards replaced with icon components (MaterialCommunityIcons or Ionicons)
+- Share button uses an icon instead of text label
+- All changes preserve existing functionality, dark mode, and animations
+
+**Files:**
+- `screens/AchievementsScreen.js` (edit)
+
+---
+
+> **After Epic 9:** V2 is live. Rest. Then V2.1 (Adaptive Reminders) and V2.2 (iOS Parity) are the next tracked work.

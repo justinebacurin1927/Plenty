@@ -397,8 +397,8 @@ export default function HomeScreen({ navigation }) {
   const W = waterWidth;
   const H = 200;
   const glassClipPath = useMemo(() => {
-    const topM = W * 0.16;    // narrower at the top (16% margin each side = 68% width)
-    const botM = W * 0.26;    // narrower at the bottom (26% margin each side = 48% width)
+    const topM = W * 0.19;    // narrower at the top (19% margin each side = 62% width)
+    const botM = W * 0.29;    // narrower at the bottom (29% margin each side = 42% width)
     const r = 5;              // corner rounding radius
     const midY = H * 0.5;     // where the side taper midpoint is
 
@@ -467,7 +467,7 @@ export default function HomeScreen({ navigation }) {
         {/* ── Header: bigger mascot + "Plenty" title + cloud bubble below title ── */}
         <View style={s.header}>
           <Mascot
-            size={170}
+            size={160}
             expression={mascotExpression}
             variant={mascotVariant}
             celebration={mascotCelebration}
@@ -538,15 +538,23 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        {/* ── Escalation Banner ── */}
+        {/* ── Escalation Banner (app-grade redesign) ── */}
         {escalationTier !== "normal" && (
           <View style={[s.escalationBanner, escalationTier === "alert" ? s.escalationAlert : s.escalationWarning]}>
-            <Ionicons name={escalationTier === "alert" ? "alert-circle" : "warning"} size={18} color="#fff" />
-            <Text style={s.escalationText}>
-              {escalationTier === "alert"
-                ? "You haven't logged in a while! Drink some water now."
-                : "It's been a while -- time to hydrate!"}
-            </Text>
+            <View style={[s.escalationAccent, { backgroundColor: escalationTier === "alert" ? "#E53E3E" : "#DD6B20" }]} />
+            <View style={s.escalationContent}>
+              <Text style={[s.escalationTitle, { color: "#fff" }]}>
+                {escalationTier === "alert" ? "Time to Hydrate!" : "Hydration Reminder"}
+              </Text>
+              <Text style={s.escalationText}>
+                {escalationTier === "alert"
+                  ? "You haven't logged in a while. Drink some water now!"
+                  : "It's been a while — time for a drink!"}
+              </Text>
+            </View>
+            <View style={[s.escalationIconWrap, { backgroundColor: escalationTier === "alert" ? "rgba(229,62,62,0.3)" : "rgba(221,107,32,0.3)" }]}>
+              <Ionicons name={escalationTier === "alert" ? "water" : "cafe"} size={22} color="#fff" />
+            </View>
           </View>
         )}
 
@@ -560,18 +568,12 @@ export default function HomeScreen({ navigation }) {
             {glassesFromMl} / {dailyGoal} glasses
           </Text>
 
-          {/* Glass-shaped icons — one per daily goal. Fire behind filled glasses once 3+ drinks */}
+          {/* Glass-shaped icons — one per daily goal */}
           <View style={s.glassesRow}>
             {Array.from({ length: Math.min(dailyGoal, 16) }, (_, i) => {
               const filled = i < glassesFromMl;
-              const showFire = filled && glassesFromMl >= 3;
               return (
                 <View key={i} style={s.glassSlot}>
-                  {showFire && (
-                    <View style={s.glassFire}>
-                      <FireStreak size={28} />
-                    </View>
-                  )}
                   <GlassIcon
                     filled={filled}
                     color={colors.primary}
@@ -582,6 +584,13 @@ export default function HomeScreen({ navigation }) {
               );
             })}
           </View>
+
+          {/* Single flame above the glass when streak active */}
+          {streak >= 3 && (
+            <View style={s.glassFlameWrapper}>
+              <StreakFlame streakLength={streak} />
+            </View>
+          )}
 
           <View style={s.waterGlassOuter}>
             <View style={s.waterContainer} onLayout={handleWaterLayout}>
@@ -597,7 +606,7 @@ export default function HomeScreen({ navigation }) {
             >
               <Path
                 d={(() => {
-                  const t = W * 0.16, b = W * 0.26, r = 5, m = H * 0.5;
+                  const t = W * 0.19, b = W * 0.29, r = 5, m = H * 0.5;
                   return [
                     `M ${t + r}, 0`,
                     `L ${W - t - r}, 0`,
@@ -641,8 +650,14 @@ export default function HomeScreen({ navigation }) {
         {/* ── Goal Suggestion ── */}
         {goalSuggestion && (
           <View style={s.goalSuggestion}>
-            <Ionicons name="bulb-outline" size={16} color={colors.primary} />
-            <Text style={s.goalSuggestionText}>{goalSuggestion.text}</Text>
+            <View style={[s.goalSuggestionAccent, { backgroundColor: colors.primary }]} />
+            <View style={s.goalSuggestionContent}>
+              <Text style={[s.goalSuggestionTitle, { color: colors.primary }]}>Suggestion</Text>
+              <Text style={[s.goalSuggestionText, { color: colors.textSecondary }]}>{goalSuggestion.text}</Text>
+            </View>
+            <View style={[s.goalSuggestionIconWrap, { backgroundColor: colors.primaryBg }]}>
+              <Ionicons name="bulb-outline" size={20} color={colors.primary} />
+            </View>
           </View>
         )}
 
@@ -817,7 +832,7 @@ function makeStyles(colors) {
     header: {
       flexDirection: "row",
       alignItems: "center",
-      gap: space("lg"),
+      gap: space("smd"),
       width: "100%",
       justifyContent: "center",
     },
@@ -905,24 +920,50 @@ function makeStyles(colors) {
     escalationBanner: {
       flexDirection: "row",
       alignItems: "center",
-      gap: space("sm"),
       width: "100%",
-      paddingVertical: space("smd"),
-      paddingHorizontal: space("lg"),
-      borderRadius: space("md"),
+      borderRadius: space("lg"),
       marginTop: space("md"),
+      overflow: "hidden",
     },
     escalationWarning: {
-      backgroundColor: colors.highBg,
+      backgroundColor: "#7C3AED",
     },
     escalationAlert: {
-      backgroundColor: colors.extremeBg,
+      backgroundColor: "#C53030",
+    },
+    escalationAccent: {
+      width: 6,
+      height: "100%",
+      position: "absolute",
+      left: 0,
+      top: 0,
+      bottom: 0,
+      borderTopLeftRadius: space("lg"),
+      borderBottomLeftRadius: space("lg"),
+    },
+    escalationContent: {
+      flex: 1,
+      paddingVertical: space("smd"),
+      paddingLeft: space("lg"),
+      paddingRight: space("sm"),
+    },
+    escalationTitle: {
+      fontSize: fontSize("label"),
+      fontWeight: "700",
+      marginBottom: 2,
     },
     escalationText: {
-      fontSize: fontSize("caption"),
-      fontWeight: "600",
-      color: "#fff",
-      flex: 1,
+      fontSize: fontSize("small"),
+      fontWeight: "500",
+      color: "rgba(255,255,255,0.85)",
+    },
+    escalationIconWrap: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: space("smd"),
     },
     progressCard: {
       backgroundColor: colors.surface,
@@ -966,10 +1007,10 @@ function makeStyles(colors) {
       justifyContent: "center",
       alignItems: "center",
     },
-    glassFire: {
+    glassFlameWrapper: {
       position: "absolute",
-      top: -8,
-      left: -2,
+      top: -4,
+      zIndex: 10,
     },
     waterGlassOuter: {
       position: "relative",
@@ -1004,19 +1045,43 @@ function makeStyles(colors) {
     goalSuggestion: {
       flexDirection: "row",
       alignItems: "center",
-      gap: space("sm"),
       marginTop: space("smd"),
-      paddingVertical: space("smd"),
-      paddingHorizontal: space("lg"),
-      backgroundColor: colors.goalSuggestionBg,
-      borderRadius: space("md"),
       width: "100%",
+      borderRadius: space("lg"),
+      backgroundColor: colors.goalSuggestionBg,
+      overflow: "hidden",
+    },
+    goalSuggestionAccent: {
+      width: 5,
+      position: "absolute",
+      left: 0,
+      top: 0,
+      bottom: 0,
+      borderTopLeftRadius: space("lg"),
+      borderBottomLeftRadius: space("lg"),
+    },
+    goalSuggestionContent: {
+      flex: 1,
+      paddingVertical: space("smd"),
+      paddingLeft: space("lg"),
+      paddingRight: space("sm"),
+    },
+    goalSuggestionTitle: {
+      fontSize: fontSize("label"),
+      fontWeight: "700",
+      marginBottom: 2,
     },
     goalSuggestionText: {
-      fontSize: fontSize("caption"),
-      fontWeight: "600",
-      color: colors.goalSuggestionText,
-      flex: 1,
+      fontSize: fontSize("small"),
+      fontWeight: "500",
+    },
+    goalSuggestionIconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: space("smd"),
     },
     section: {
       marginTop: space("xl") + 4,
@@ -1096,10 +1161,11 @@ function makeStyles(colors) {
       gap: space("sm"),
       marginTop: space("lg"),
       paddingVertical: space("lgm"),
-      paddingHorizontal: space("xl"),
-      borderRadius: space("lg"),
-      width: "100%",
+      paddingHorizontal: space("2xl"),
+      borderRadius: 50,
       backgroundColor: colors.primary,
+      alignSelf: "center",
+      minWidth: 220,
     },
     drinkButtonText: {
       fontSize: fontSize("body"),

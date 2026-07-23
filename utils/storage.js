@@ -12,6 +12,7 @@ const KEYS = {
 };
 
 const DEFAULT_SETTINGS = {
+  name: "",
   intervalMinutes: 30,
   sound: true,
   quietHoursEnabled: false,
